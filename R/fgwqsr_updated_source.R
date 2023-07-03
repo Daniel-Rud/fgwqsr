@@ -843,7 +843,20 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
   return(fits)
 }
 
-
+#' Fit a FGWQSR Model
+#'
+#' @param formula A formula for model fitting of FGWQSR.  Please see description for formula construction
+#' @param data R dataframe that contains all covariates and the outcome data
+#' @param quantiles number of quantiles to quantize the exposure variables in the mixture portion of the model.  Default value is 5.
+#' @param n_mvn_sims defines resolution for simulated null distribution for group index and single chemical LRTs.  Default is 10,000.
+#' @param zero_threshold_cutoff defines a .
+#' @param verbose Displays messages and progress bar while fitting FGWQSR model.  Default is TRUE.
+#' @param cores number of cores to parallelize on for fitting nested models and simulated null LRT distributions.  Default is number of available cores on user device.
+#' @param optim_control_list - option to supply control options to optim.
+#' @return list with attributes from fgwqsr model fitting.
+#' @import statar
+#' @import progressr
+#' @export
 
 fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
                   zero_threshold_cutoff = .5, verbose = T,
@@ -994,6 +1007,13 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
 #       ifelse(fgwqsr_sol$total_time < 60,paste(round(fgwqsr_sol$total_time,2), "seconds"),
 #              paste(round(fgwqsr_sol$total_time/60, 2), "minutes")), "on",fgwqsr_sol$cores, "cores." )
 # }
+
+
+#' Summarize a fgwqsr model fit
+#' @param fgwqsr_sol a fitted object from a fgwqsr() call
+#' @param digits the number of rounding digits to display in summary tables.
+#' @export
+
 
 fgwqsr_summary = function(fgwqsr_sol, digits  = 6)
 {
