@@ -66,7 +66,7 @@ quantize_vars = function(data, vars, quantiles)
 
   for(i in 1: length(mixture_comps))
   {
-    data[[mixture_comps[i]]] = xtile(data[[mixture_comps[i]]], n = quantiles) - 1
+    data[[mixture_comps[i]]] = statar::xtile(data[[mixture_comps[i]]], n = quantiles) - 1
   }
 
   return(data)
@@ -366,21 +366,6 @@ reparam_GI_weights = function(B, vars)
 
   reparam$constant = B[1]
 
-  # ALTERNATE ENCODING
-  # for(i in 1:num_mixes) # iterate of number of mixtures
-  # {
-  #   # group effect
-  #   reparam[[paste("mix_", i, sep = "")]]$group_index = sum(B[current_index:(current_index + mix_sizes[i] - 1)])
-  #
-  #   # weights
-  #   reparam[[paste("mix_", i, sep = "")]]$weights =
-  #     B[current_index:(current_index + mix_sizes[i] - 1)] /
-  #     reparam[[paste("mix_", i, sep = "")]]$group_index
-  #
-  #   # change the current index for next iteration
-  #   current_index = current_index + mix_sizes[i]
-  # }
-
   return(reparam)
 }
 
@@ -432,7 +417,7 @@ logistic_neg_ll = function(B,design_matrix, y_vec, vars) # log likelihood
 {
   lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1))
 
-  ll =ifelse(y_vec == 1, -lin_pred, lin_pred) %>% softplus %>% sum
+  ll =ifelse(y_vec == 1, -lin_pred, lin_pred) %>% sigmoid::softplus %>% sum
 
   return(ll)
 }
@@ -453,15 +438,8 @@ logistic_neg_ll = function(B,design_matrix, y_vec, vars) # log likelihood
 logistic_neg_gr = function(B,design_matrix, y_vec, vars)
 {
 
-  # gr = rep(0, length(B))
-  #
-  # for(i in 1: nrow(design_matrix))
-  # {
-  #   gr = gr + design_matrix[i,] * (y_vec[i] - sigmoid(design_matrix[i,] %*% B))
-  # }
-  #
-  # gr
-  gr = colSums(design_matrix * (c(y_vec - sigmoid(crossprod(t(design_matrix),B)))))
+  gr = colSums(design_matrix * (c(y_vec - pracma::sigmoid(crossprod(t(design_matrix),B)))))
+
   return(-1*gr)
 }
 
@@ -471,7 +449,7 @@ logistic_hessian = function(B,design_matrix)
 
   z = as.matrix(design_matrix) %*% matrix(B, ncol = 1) # get z_i's for sigmoid function
 
-  D = (sigmoid(z)*(1-sigmoid(z))) %>% as.vector
+  D = (pracma::sigmoid(z)*(1-pracma::sigmoid(z))) %>% as.vector
 
   hessian = -1*crossprod(design_matrix, (design_matrix * D))
 
@@ -542,7 +520,7 @@ fit_fgwqsr = function(formula, data, quantiles, output_hessian = F,
 
   if(length(vars$categorical)>0) # if there are categorical variables
   {
-    data = dummy_cols(data, select_columns = vars$categorical, remove_first_dummy = TRUE,
+    data = fastDummies::dummy_cols(data, select_columns = vars$categorical, remove_first_dummy = TRUE,
                       remove_selected_columns = TRUE) # add dummy variables
   }
 
@@ -568,7 +546,7 @@ fit_fgwqsr = function(formula, data, quantiles, output_hessian = F,
 
   # first perform a few initial iterations in reparameterization
 
-  ML_sol = optim(par = initial_vals,
+  ML_sol = stats::optim(par = initial_vals,
                  fn = fgwqsr_ll,
                  design_matrix = design_matrix,
                  y_vec = y_vec,
@@ -589,7 +567,7 @@ fit_fgwqsr = function(formula, data, quantiles, output_hessian = F,
 
   initial_vals = ML_sol_logistic_param
 
-  final_fit = optim(par = initial_vals,
+  final_fit = stats::optim(par = initial_vals,
                     fn = logistic_neg_ll,
                     gr = logistic_neg_gr,
                     design_matrix = design_matrix,
@@ -617,7 +595,7 @@ fit_fgwqsr = function(formula, data, quantiles, output_hessian = F,
 
 generate_optimization_regions = function(vars, num_confounders)
 {
-  perms = permutations(2, r = length(vars$mixture), v = c(-1,1),
+  perms = gtools::permutations(2, r = length(vars$mixture), v = c(-1,1),
                        repeats.allowed = T)
   num_mixes = length(vars$mixture)
 
@@ -679,7 +657,7 @@ get_cov_initial_vals = function(formula, data, quantiles)
 
   if(length(vars$categorical)>0) # if there are categorical variables
   {
-    data = dummy_cols(data, select_columns = vars$categorical, remove_first_dummy = TRUE,
+    data = fastDummies::dummy_cols(data, select_columns = vars$categorical, remove_first_dummy = TRUE,
                       remove_selected_columns = TRUE) # add dummy variables
   }
 
@@ -689,7 +667,7 @@ get_cov_initial_vals = function(formula, data, quantiles)
 
   # run GLM -- we use all variables in data matrix since we only kept used vars
 
-  glm_formula = paste(y, "~ .") %>% as.formula
+  glm_formula = paste(y, "~ .") %>% stats::as.formula
 
   unconstr_glm = glm(formula =glm_formula, data = data, family = binomial)
 
@@ -710,110 +688,25 @@ get_cov_initial_vals = function(formula, data, quantiles)
 
 }
 
-# multiple optim FGWQSR
-# fit_fgwqsr = function(formula, data, quantiles, output_hessian = F,
-#                       initial_cov_vals, return_y = F, return_data = F,
-#                       optim_control_list)
-# {
-#   f = as.character(formula)
-#
-#   f[3] = gsub("\n", "", f[3])
-#
-#   y = f[2]
-#
-#   vars = clean_vars(f[3])
-#
-#   data = data[, c(y, unlist(vars))] # keep only variables in model, order them for fast ll
-#   # NOTICE THAT DATA SET IS MODIFIED LOCALLY IN THIS FUNCTION CALL
-#
-#   if(length(vars$categorical)>0) # if there are categorical variables
-#   {
-#     data = dummy_cols(data, select_columns = vars$categorical, remove_first_dummy = TRUE,
-#                       remove_selected_columns = TRUE) # add dummy variables
-#   }
-#
-#   data = quantize_vars(data,vars, quantiles) # quantize mixture components
-#
-#   # create likelihood model for ML
-#
-#   num_confounders = ncol(data) - unlist(vars$mixture)%>%length -1 # -1 for outcome y column
-#
-#   # this is for likelihood ratio test
-#
-#   y_vec = data[,1] # y outcome vector to send to likelihood, will always be first col
-#   design_matrix = cbind(rep(1, nrow(data)), data[, -1]) %>% as.matrix # the first column of data has y value
-#
-#   optimization_regions = generate_optimization_regions(vars, num_confounders)
-#
-#   models = vector(mode = "list", length = length(optimization_regions))
-#
-#   for(i in 1:length(models))
-#   {
-#     # populate initial values with estimates for intercept and confounders
-#
-#     initial_vals = generate_initial_vals(optimization_regions[[i]]$lower,
-#                                          optimization_regions[[i]]$upper)
-#     initial_vals[1] = initial_cov_vals$intercept_est
-#
-#     if(num_confounders > 0) # if we have confounders -- we have inital ests for them
-#     {
-#       initial_vals[(length(initial_vals) - num_confounders + 1):
-#                      length(initial_vals)] = initial_cov_vals$confounder_ests
-#     }
-#
-#     models[[i]] = optim(par = initial_vals,
-#                         fn = logistic_neg_ll,
-#                         gr = logistic_neg_gr,
-#                         design_matrix = design_matrix,
-#                         y_vec = y_vec,
-#                         vars = vars,
-#                         method = "L-BFGS-B",
-#                         lower = optimization_regions[[i]]$lower,
-#                         upper = optimization_regions[[i]]$upper,
-#                         control = optim_control_list)
-#
-#   }
-#
-#   max_ll = which.min(sapply(models, "[[", 2))
-#
-#   final_fit = models[[max_ll]]
-#
-#
-#   return_list = list(ML_sol= final_fit, vars = vars)
-#
-#   # return y and new data only for fist FG formula.
-#
-#   if(return_y == T)
-#   {
-#     return_list[["y"]] = y_vec
-#   }
-#   if(return_data == T)
-#   {
-#     return_list[["new_data"]] = data
-#   }
-#   return(return_list)
-# }
-
-
 fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_control_list)
 {
   if(verbose == TRUE) # call to progress
   {
-    p <- progressor(along = formulas)
+    p <- progressr::progressor(along = formulas)
   }
 
   # get initial vals for intercept and adjusting covariates
-  initial_cov_vals = get_cov_initial_vals(formula = as.formula(formulas[[1]]),
+  initial_cov_vals = get_cov_initial_vals(formula = stats::as.formula(formulas[[1]]),
                                           data = data,
                                           quantiles = quantiles)
-  plan(multisession, workers = cores)
+  future::plan(future::multisession, workers = cores)
 
-  fits = future_lapply(1:length(formulas), FUN = function(x)
+  fits = future.apply::future_lapply(1:length(formulas), FUN = function(x)
   {
     result = NULL
     if(x == 1) # if the original formula
     {
-      result = fit_fgwqsr(as.formula(formulas[x]), data, quantiles, return_y = T,
+      result = fit_fgwqsr(stats::as.formula(formulas[x]), data, quantiles, return_y = T,
                           return_data = T, initial_cov_vals = initial_cov_vals,
                           optim_control_list = optim_control_list)
       if(verbose == TRUE)
@@ -824,8 +717,8 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
     {
       # the ifelse in "result" is to handle the ll for the 1 group null ll for a 1 group lrt
       result = ifelse( (length(vars$mixture) == 1) && (x == (vars$mixture %>% unlist %>% length %>% sum(2))),
-                       glm(as.formula(paste(formulas[x], "1")), data = data, family = "binomial") %>% logLik,
-                       -1*fit_fgwqsr(as.formula(formulas[x]), data, quantiles,
+                       stats::glm(stats::as.formula(paste(formulas[x], "1")), data = data, family = "binomial") %>% stats::logLik,
+                       -1*fit_fgwqsr(stats::as.formula(formulas[x]), data, quantiles,
                                      initial_cov_vals = initial_cov_vals,
                                      optim_control_list = optim_control_list)$ML_sol$value)
 
@@ -838,7 +731,7 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
 
   })
 
-  plan(sequential)
+  future::plan(future::sequential)
 
   return(fits)
 }
@@ -860,7 +753,7 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
 
 fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
                   zero_threshold_cutoff = .5, verbose = T,
-                  cores = availableCores(),
+                  cores = future::availableCores(),
                   optim_control_list = list(maxit = 1000, factr = 1E-12, fnscale = 1))
 {
 
@@ -875,9 +768,9 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
   # run models in parallel, verbose option
   if(verbose == TRUE)
   {
-    handlers("progress")
+    progressr::handlers("progress")
     message("\nFitting nested models for Weight Inference:")
-    with_progress(fits <- fgwqsr_caller(formulas, data, quantiles,vars, verbose,
+    progressr::with_progress(fits <- fgwqsr_caller(formulas, data, quantiles,vars, verbose,
                                         cores, optim_control_list))
     message("\nNow Performing Inference...")
   }else
@@ -908,7 +801,7 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
   design_matrix = cbind(intercept = rep(1, nrow(new_data)),new_data[,-1])
   observed_fisher = -1*logistic_hessian(B = params_logistic_form,
                                         design_matrix = design_matrix)
-  cov_mat = pinv(observed_fisher)
+  cov_mat = pracma::pinv(observed_fisher)
 
   # get ML sol in group index and weight formulation
   names(params_logistic_form) = names(design_matrix)
@@ -961,7 +854,7 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
 
   # when certain estimates are on the boundary, convergance code issues
   # message regarding LNSRCH == line search method.  Therefore, do not look at
-  # convergence code
+  # convergence code in some instances
 
   L_BFGS_B_convergance = list(counts = fgwqsr_fit$ML_sol$counts,
                               convergence = fgwqsr_fit$ML_sol$convergence,
@@ -981,40 +874,12 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
               param_cov_mat = cov_mat))
 }
 
-# fgwqsr_summary = function(fgwqsr_sol, digits  = 6)
-# {
-#
-#   cat("\nCall: \nFGWQSR with formula '",gsub("  ", "",paste(format(fgwqsr_sol$formula), collapse = "")),"' on n = ",fgwqsr_sol$n," observations.", sep = "" )
-#   cat("\n\n", fgwqsr_sol$n_mvn_sims, " samples used for simulated LRT distirbution.",sep = "")
-#   cat("\n\nLog Likelihood:", fgwqsr_sol$ll, "| AIC:",fgwqsr_sol$aic, "| BIC:", fgwqsr_sol$bic)
-#   cat("\n\nEstimates and Inference for Group Index Effects\n", sep = "")
-#   print(fgwqsr_sol$inference_frames$group_index_frame, digits = digits)
-#   cat("\nEstimates and Inference for Weights\n")
-#
-#   current_index = 1
-#   for(i in 1: length(fgwqsr_sol$vars$mixture))
-#   {
-#     group_size = fgwqsr_sol$vars$mixture[[i]] %>% length
-#     output = fgwqsr_sol$inference_frames$weight_frame[current_index: (current_index + group_size - 1), ]
-#     print(output, digits = digits)
-#     current_index = current_index + group_size
-#     cat("-------------------------------------------------\n")
-#   }
-#   cat("\nEstimates and Inference for Intercept and Adjusting Covariates\n")
-#   print(fgwqsr_sol$inference_frames$adj_param_frame)
-#   cat("\nSignificance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' \n")
-#   cat("\nTotal runtime for FGWQSR: ",
-#       ifelse(fgwqsr_sol$total_time < 60,paste(round(fgwqsr_sol$total_time,2), "seconds"),
-#              paste(round(fgwqsr_sol$total_time/60, 2), "minutes")), "on",fgwqsr_sol$cores, "cores." )
-# }
 
 
 #' Summarize a fgwqsr model fit
 #' @param fgwqsr_sol a fitted object from a fgwqsr() call
 #' @param digits the number of rounding digits to display in summary tables.
 #' @export
-
-
 fgwqsr_summary = function(fgwqsr_sol, digits  = 6)
 {
   # rounding for mixture index frame
