@@ -11,7 +11,7 @@ fgwqsr(
   n_mvn_sims = 10000,
   zero_threshold_cutoff = 0.5,
   verbose = T,
-  cores = availableCores(),
+  cores = future::availableCores(),
   optim_control_list = list(maxit = 1000, factr = 1e-12, fnscale = 1)
 )
 }
