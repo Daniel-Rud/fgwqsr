@@ -47,11 +47,7 @@ and $\sum_{k = 1}^{c_g} w_{g,k} =1$, $w_{g,k} \in (0,1)$.
 First, we load the FGWQSR package and other libraries we will be using for the excerise.  
 
 ```{r packages}
-source("R/fgwqsr_updated_source.R")
-library(dplyr) # for %>% pipe operator
-library(mvtnorm) # for mvtnorm()
-library(statar) # for xtile()
-library(corpcor) # make.positive.definite()
+library(fgwqsr)
 ```
 
 
@@ -60,10 +56,9 @@ library(corpcor) # make.positive.definite()
 To begin, let us generate some data to use.  We will have 14 underlying chemical exposure variables, where we will have mixture groups of sizes (5,4,5).  We will use a fixed correlation structure such that the correlation of chemicals within a group is .7 and the cross correlations between 2 chemicals in different groups is .5. 
 <br>
 We first define ESS and CCS. ESS is a list that contains the the sample size and the true underlying weight distribution of the chemicals in each group.  CCS is a two element vector where the first index defines the within group correlation and the second index controls the between group correlation.  The sample size for our dataset is fixed to $n = 10,000$ and we set the distribution of the true underlying weights as follows: 
-
-* $\mathbf{w}_1 = (1/3,1/3,1/3,0,0)$
-* $\mathbf{w}_2 = (1/2,1/2, 0, 0)$
-* $\mathbf{w}_3 = (1/3,1/3,1/3,0,0)$.  
+*$\mathbf{w}_1 = (1/3,1/3,1/3,0,0)$
+*$\mathbf{w}_2 = (1/2,1/2, 0, 0)$
+*$\mathbf{w}_3 = (1/3,1/3,1/3,0,0)$.  
 <br>
 We set the group index effects for the three groups as follows (in OR scale): $\exp(\gamma_1) = .5$, $\exp(\gamma_2) = 1$, $\exp(\gamma_3) = 1.5$
 ```{r}
@@ -82,7 +77,7 @@ ccs = c(.5,.1)
 ```
 <br>
 
-We create a function to construct the desired correlation matrix.  
+We create a function to create the desired correlation matrix.  
 ```{r}
 # function to create correlation matrix 
 create_corr_mat = function(ESS, CCS)
@@ -110,7 +105,6 @@ create_corr_mat = function(ESS, CCS)
     corr_mat[i,i] = 1
   }
   
-  corr_mat = make.positive.definite(corr_mat) # in case it is not positive definite 
   return(corr_mat)
 }
 
@@ -131,14 +125,14 @@ corr %>% data.frame # for viewing
 We generate our exposure data based on the derived correlation structure.  We will use 5 quantiles, as that is the default for FGWQSR.  
 ```{r}
 set.seed(1) # for reproducibility
-chem_data = rmvnorm(n, mean = rep(0, 14), sigma = corr)
+chem_data = mvtnorm::rmvnorm(n, mean = rep(0, 14), sigma = corr)
 ```
 <br>
 
 Next, we quantize the exposure variables in order to make comparisons between the true underlying oracle model and FGWQSR estimates.  Note that we will subtract 1 from our quantized variables, so that the first quintile corresponds to the measure of 0.  By doing this, we can ensure that we have an interpretable model intercept.  
 
 ```{r}
-chem_data = apply(chem_data, MARGIN = 2, xtile, n = 5) - 1
+chem_data = apply(chem_data, MARGIN = 2, statar::xtile, n = 5) - 1
 
 head(chem_data %>% data.frame)
 ```
@@ -156,7 +150,7 @@ logit_pi =  gamma[1] * (chem_data[, 1:5] %*% ess$weights$w1) +
   gamma[3] * (chem_data[, 10:14] %*% ess$weights$w3) + intercept
 
 # transform to pi 
-pi = plogis(logit_pi)
+pi = stats::plogis(logit_pi)
 
 # transform to bernoulli outcome 
 y = sapply(pi, FUN = function(p) rbinom(1,1,p))
@@ -174,12 +168,10 @@ Now, we are ready to fit a FGWQSR model
 
 # Fitting using FGWQSR 
 <br>
-From the FGWQSR package, the main function we will be using to fit models is the fgwqsr() function.  The model formula that we specify will be different than traditional formulas in lm and glm, as we will need to denote our mixture groups.  Three special characters are used in fgwqsr formulas: 
+From the FGWQSR package, the main function we will be using to fit models if the fgwqsr() function.  The model formula that we specify will be different than traditional formulas in lm and glm, as we will need to denote our mixture groups.  Three special characters are used in fgwqsr formulas: 
 <br>
 * $|$ - denotes the boundary of a mixture group, used to seperate chemicals within a mixture group 
-
 * $/$ - denotes the end of the mixture group specification, adjusting covariates can be added to the formula after this character.  If no adjusting covariates, do not need to specify
-
 * i. - precedes categorical variables to denote a categorical variable.  For example, if we have a categorical variable cat_var, we would denote this in the model formula by i.cat_var.  This is similar to the stata syntax to declare categorical variables.  
 <br>
 The fgwqsr() function has other options too: 
@@ -205,13 +197,11 @@ mod_formula = y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X12 +
 
 Notice that we did not use the "$/$" character since we did not include adjusting covariates.  Now, we can fit the model using the function fgwqsr().  
 ```{r}
-
 fgwqsr_fit = fgwqsr(formula = mod_formula, 
                     data = data, 
                     quantiles = 5, 
-                    n_mvn_sims = 10000, 
+                    n_mvn_sims = 100, 
                     verbose = T)
-
 
 ```
 <br>
@@ -273,7 +263,7 @@ logit_pi =  gamma[1] * (chem_data[, 1:5] %*% ess$weights$w1) +
 
 # transform to pi 
 
-pi = plogis(logit_pi)
+pi = stats::plogis(logit_pi)
 
 # transform to bernoulli outcome 
 y = sapply(pi, FUN = function(p) rbinom(1,1,p))
@@ -294,7 +284,7 @@ mod_formula_adj = y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X
 fgwqsr_fit_adj = fgwqsr(formula = mod_formula_adj, 
                     data = data, 
                     quantiles = 5, 
-                    n_mvn_sims = 10000, 
+                    n_mvn_sims = 100, 
                     verbose = T)
 
 ```

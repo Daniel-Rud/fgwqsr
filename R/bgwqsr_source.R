@@ -8,18 +8,11 @@
 # the separation between mixture components and confounders
 # i. denotes creating a categorical response
 
-library(fastDummies)
-library(statar)
-library(coda)
-library(ggplot2)
-library(gridExtra)
-library(runjags)
-
 
 cleanVars = function(vars) # separates formula into mixture component, continuous confounder,
   # and categorical confounder names
 {
-  sep = base::strsplit(vars, split = "/", fixed = TRUE)[[1]]
+  sep = strsplit(vars, split = "/", fixed = TRUE)[[1]]
 
   mixtureString = sep[1]
 
@@ -66,7 +59,7 @@ quantizeVars = function(data, vars, quantiles)
 
   for(i in 1: length(mixtureComps))
   {
-    data[[mixtureComps[i]]] = xtile(data[[mixtureComps[i]]], n = quantiles) - 1
+    data[[mixtureComps[i]]] = statar::xtile(data[[mixtureComps[i]]], n = quantiles) - 1
   }
 
   return(data)
@@ -226,47 +219,6 @@ createJagsModelString = function(data,y, vars)
   return(paramList)
 }
 
-
-
-
-bgwqsr = function(formula, data, quantiles = 4,  n.iter = 1000, n.burnin = 5000, n.thin = 3, n.chains=1, n.adapt= 1000)
-{
-  f = as.character(formula)
-
-  f[3] = gsub("\n", "", f[3])
-
-  y = f[2]
-
-  vars = cleanVars(f[3])
-
-  if(length(vars$categorical)>0) # if there are categorical variables
-  {
-    data = dummy_cols(data, select_columns = vars$categorical, remove_first_dummy = TRUE) # add dummy variables
-  }
-
-  data = quantizeVars(data,vars, quantiles) # quantize mixture components
-
-  model = createJagsModelString(data,y, vars) # create form of Jags model
-
-  modelString = model[[1]]
-
-  # writeLines(modelString, "modelString.txt")
-
-  jagsModel = jags.model(textConnection(modelString),data=data, n.chains= n.chains, n.adapt = n.adapt)
-
-  update(jagsModel, n.burnin)
-
-  modelParams = unlist(model[-1])
-
-  mod_sim = coda.samples(model = jagsModel, variable.names = modelParams, n.iter = n.iter, thin = n.thin)
-
-  print(summary(mod_sim))
-
-  returnList = list(model = jagsModel,vars = vars, params =  modelParams, results = summary(mod_sim), samples = mod_sim)
-
-  return(returnList)
-}
-
 bgwqsr_parallel = function(formula, data, quantiles = 4,  n.iter = 1000, n.burnin = 5000,
                            n.thin = 1, n.chains=3, n.adapt= 1000, inits = NA)
 {
@@ -280,7 +232,7 @@ bgwqsr_parallel = function(formula, data, quantiles = 4,  n.iter = 1000, n.burni
 
   if(length(vars$categorical)>0) # if there are categorical variables
   {
-    data = dummy_cols(data, select_columns = vars$categorical,
+    data = fastDummies::dummy_cols(data, select_columns = vars$categorical,
                       remove_first_dummy = TRUE, remove_selected_columns = TRUE) # add dummy variables
   }
 
@@ -292,12 +244,12 @@ bgwqsr_parallel = function(formula, data, quantiles = 4,  n.iter = 1000, n.burni
 
   save_params = unlist(c(model$betaNames, model$phis, model$weights))
 
-  jags.model = run.jags(model = modelString, data = data,
+  jags.model = runjags::run.jags(model = modelString, data = data,
                         monitor = save_params,
                         n.chains = n.chains, sample = n.iter, burnin = n.burnin,
                         adapt = n.adapt, thin = n.thin, method = "parallel",
                         inits = inits, modules = "glm")
-  jags.model = add.summary(jags.model)
+  jags.model = runjags::add.summary(jags.model)
 
   modelParams = unlist(model[-1])
 
@@ -306,13 +258,25 @@ bgwqsr_parallel = function(formula, data, quantiles = 4,  n.iter = 1000, n.burni
   return(returnlist)
 }
 
+
+#' Plot Results of Beta and Weight Estimates
+#' @description
+#' A short description...
+#'
+#' @param model a BGWQSR model object fit from bgwqsr_parallel
+#' @param filename optional file path to save results of plot in a pdf format
+#' @param weight_axis_pos choice to put legend for weight plots on the left or right side of plot.  Options are "left" or "right".  Default is "left"
+#' @param beta_axis_pos choice to put legend for group index plots on the left or right side of plot. Options are "left" or "right".  Default is "left"
+#' @return void, prints plots, optionally saves plot in pdf format to filename
+#' @import ggplot2
+#' @export
 plotResults = function(model, filename = NULL, weight_axis_pos = "left", beta_axis_pos = "left")
 {
   results = results = model$results[[2]]
 
   if(length(names(model))==3) # if it was run in parallel
   {
-    results = results = model$model$summary[[2]]
+    results = model$model$summary[[2]]
   }
 
   #Weight Plotting
@@ -361,9 +325,9 @@ plotResults = function(model, filename = NULL, weight_axis_pos = "left", beta_ax
                           L2.5 = weightData[, 1], U97.5 = weightData[, 3]  )
 
 
-  plotWeights = ggplot(data = weightPlot, mapping = aes(x = median, y = name)) +
-    geom_point(mapping = aes(color = group), size = 3) +
-    geom_errorbar(aes(xmin =L2.5, xmax = U97.5), size = .8) + xlab("2.5% quantile, Median, 97.5% quantile")+
+  plotWeights = ggplot(data = weightPlot, mapping = aes(x = .data$median, y = .data$name)) +
+    geom_point(mapping = aes(color = .data$group), size = 3) +
+    geom_errorbar(aes(xmin =.data$L2.5, xmax = .data$U97.5), size = .8) + xlab("2.5% quantile, Median, 97.5% quantile")+
     ylab("Pollutant Name") + scale_y_discrete(position = weight_axis_pos) +
     theme(panel.grid.major.y = element_line(colour = "grey50", size = 0.2))
 
@@ -382,25 +346,34 @@ plotResults = function(model, filename = NULL, weight_axis_pos = "left", beta_ax
                           L2.5 = effectEstimates[,1], U97.5 = effectEstimates[, 3],
                           significant = factor(significant))
 
-  plotBetas = ggplot(data = effectData, mapping = aes(x = median, y = name)) +
+  plotBetas = ggplot(data = effectData, mapping = aes(x = .data$median, y = .data$name)) +
     geom_vline(xintercept = 0, linetype = "longdash", colour = "red") +
-    geom_point(size = 3, aes(color = significant)) +
+    geom_point(size = 3, aes(color = .data$significant)) +
     scale_color_manual(values = c("sig" = "red", "insig" = "black")) +
-    geom_errorbar(aes(xmin =L2.5, xmax = U97.5), size = .8) + ylab("Effect Name") +
+    geom_errorbar(aes(xmin =.data$L2.5, xmax = .data$U97.5), size = .8) + ylab("Effect Name") +
     xlab("2.5% quantile, Median, 97.5% quantile") +
     scale_y_discrete(position = beta_axis_pos) +
     theme(panel.grid.major.y = element_line(colour = "grey50", size = 0.2))
 
-  grid.arrange(plotWeights, plotBetas, ncol = 2)
+  gridExtra::grid.arrange(plotWeights, plotBetas, ncol = 2)
 
   if(!is.null(filename))
   {
-    pdf(paste(filename, ".pdf", sep = ""))
-    grid.arrange(plotWeights, plotBetas, ncol = 1)
-    dev.off()
+    grDevices::pdf(paste(filename, ".pdf", sep = ""))
+    gridExtra::grid.arrange(plotWeights, plotBetas, ncol = 1)
+    grDevices::dev.off()
   }
 }
 
+#' Plot Weight Results
+#' @description
+#' Plots the 95% credible intervals for each single chemical weight, along with posterior mean weight estimates, from the BGWQSR weight posterior distributions.
+#' @param model a BGWQSR model object fit from bgwqsr_parallel
+#' @param filename optional file path to save results of plot in a pdf format
+#' @param weight_axis_pos choice to put legend for weight plots on the left or right side of plot.  Options are "left" or "right".  Default is "left"
+#' @return void, prints weight plot, optionally saves plot in pdf format to filename
+#' @import ggplot2
+#' @export
 plotWeights = function(model, filename = NULL, weight_axis_pos = "left")
 {
   numMixes = length(model$vars$mixture)
@@ -454,9 +427,9 @@ plotWeights = function(model, filename = NULL, weight_axis_pos = "left")
                           L2.5 = weightData[, 1], U97.5 = weightData[, 3] )
 
 
-  plotWeights = ggplot(data = weightPlot, mapping = aes(x = median, y = name)) +
-    geom_point(mapping = aes(color = group), size = 3) +
-    geom_errorbar(aes(xmin =L2.5, xmax = U97.5), size = .8) + xlab("2.5% quantile, Median, 97.5% quantile")+
+  plotWeights = ggplot(data = weightPlot, mapping = aes(x = .data$median, y = .data$name)) +
+    geom_point(mapping = aes(color = .data$group), size = 3) +
+    geom_errorbar(aes(xmin =.data$L2.5, xmax = .data$U97.5), size = .8) + xlab("2.5% quantile, Median, 97.5% quantile")+
     ylab("Pollutant Name") + scale_y_discrete(position = weight_axis_pos) +
     theme(panel.grid.major.y = element_line(colour = "grey50", size = 0.2))
 
@@ -465,12 +438,22 @@ plotWeights = function(model, filename = NULL, weight_axis_pos = "left")
 
   if(!is.null(filename))
   {
-    pdf(paste(filename, ".pdf", sep = ""))
+    grDevices::pdf(paste(filename, ".pdf", sep = ""))
     print(plotWeights)
-    dev.off()
+    grDevices::dev.off()
   }
 
 }
+
+#' Plot Results of Betas
+#' @description
+#' Plots the posterior 95% credible interval for group index posteriors from BGWQSR, as well as posterior mean.
+#' @param model a BGWQSR model object fit from bgwqsr_parallel
+#' @param filename optional file path to save results of plot in a pdf format
+#' @param beta_axis_pos choice to put legend for group index plots on the left or right side of plot. Options are "left" or "right".  Default is "left"
+#' @return void, prints plots, optionally saves plot in pdf format to filename
+#' @import ggplot2
+#' @export
 
 plotBetas = function(model, filename = NULL, beta_axis_pos = "left") # enter just name of file, not with .pdf
 {
@@ -492,11 +475,11 @@ plotBetas = function(model, filename = NULL, beta_axis_pos = "left") # enter jus
                           L2.5 = effectEstimates[,1], U97.5 = effectEstimates[, 3],
                           significant = factor(significant))
 
-  plotBetas = ggplot(data = effectData, mapping = aes(x = median, y = name)) +
+  plotBetas = ggplot(data = effectData, mapping = aes(x = .data$median, y = .data$name)) +
     geom_vline(xintercept = 0, linetype = "longdash", colour = "red")+
-    geom_point(size = 3, aes(color = significant)) +
+    geom_point(size = 3, aes(color = .data$significant)) +
     scale_color_manual(values = c("sig" = "red", "insig" = "black")) +
-    geom_errorbar(aes(xmin =L2.5, xmax = U97.5), size = .8) + ylab("Effect Name") +
+    geom_errorbar(aes(xmin =.data$L2.5, xmax = .data$U97.5), size = .8) + ylab("Effect Name") +
     xlab("2.5% quantile, Median, 97.5% quantile")  +
     scale_y_discrete(position = beta_axis_pos) +
     theme(panel.grid.major.y = element_line(colour = "grey50", size = 0.2))
@@ -506,9 +489,9 @@ plotBetas = function(model, filename = NULL, beta_axis_pos = "left") # enter jus
 
   if(!is.null(filename))
   {
-    pdf(paste(filename, ".pdf", sep = ""))
+    grDevices::pdf(paste(filename, ".pdf", sep = ""))
     print(plotBetas)
-    dev.off()
+    grDevices::dev.off()
   }
 }
 

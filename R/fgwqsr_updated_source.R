@@ -1,17 +1,3 @@
-### Libraries ################################################################
-library(fastDummies)
-library(statar)
-library(ggplot2)
-library(gridExtra)
-library(dplyr)
-library(rlang)
-library(progressr)
-library(future)
-library(future.apply)
-library(pracma)
-library(sigmoid) # for softplus function
-##############################################################################
-
 
 clean_vars = function(vars)
 {
@@ -417,7 +403,7 @@ logistic_neg_ll = function(B,design_matrix, y_vec, vars) # log likelihood
 {
   lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1))
 
-  ll =ifelse(y_vec == 1, -lin_pred, lin_pred) %>% sigmoid::softplus %>% sum
+  ll =ifelse(y_vec == 1, -lin_pred, lin_pred) %>% sigmoid::softplus() %>% sum
 
   return(ll)
 }
@@ -667,11 +653,11 @@ get_cov_initial_vals = function(formula, data, quantiles)
 
   # run GLM -- we use all variables in data matrix since we only kept used vars
 
-  glm_formula = paste(y, "~ .") %>% stats::as.formula
+  glm_formula = paste(y, "~ .") %>% stats::formula()
 
-  unconstr_glm = glm(formula =glm_formula, data = data, family = binomial)
+  unconstr_glm = stats::glm(formula =glm_formula, data = data, family = stats::binomial)
 
-  glm_coefs = coef(unconstr_glm)
+  glm_coefs = stats::coef(unconstr_glm)
 
   intercept_est = glm_coefs[1] # get intercept estimate
 
@@ -696,7 +682,7 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
   }
 
   # get initial vals for intercept and adjusting covariates
-  initial_cov_vals = get_cov_initial_vals(formula = stats::as.formula(formulas[[1]]),
+  initial_cov_vals = get_cov_initial_vals(formula = stats::formula(formulas[[1]]),
                                           data = data,
                                           quantiles = quantiles)
   future::plan(future::multisession, workers = cores)
@@ -706,7 +692,7 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
     result = NULL
     if(x == 1) # if the original formula
     {
-      result = fit_fgwqsr(stats::as.formula(formulas[x]), data, quantiles, return_y = T,
+      result = fit_fgwqsr(stats::formula(formulas[x]), data, quantiles, return_y = T,
                           return_data = T, initial_cov_vals = initial_cov_vals,
                           optim_control_list = optim_control_list)
       if(verbose == TRUE)
@@ -717,8 +703,8 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
     {
       # the ifelse in "result" is to handle the ll for the 1 group null ll for a 1 group lrt
       result = ifelse( (length(vars$mixture) == 1) && (x == (vars$mixture %>% unlist %>% length %>% sum(2))),
-                       stats::glm(stats::as.formula(paste(formulas[x], "1")), data = data, family = "binomial") %>% stats::logLik,
-                       -1*fit_fgwqsr(stats::as.formula(formulas[x]), data, quantiles,
+                       stats::glm(stats::formula(paste(formulas[x], "1")), data = data, family = "binomial") %>% stats::logLik,
+                       -1*fit_fgwqsr(stats::formula(formulas[x]), data, quantiles,
                                      initial_cov_vals = initial_cov_vals,
                                      optim_control_list = optim_control_list)$ML_sol$value)
 
@@ -747,8 +733,6 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
 #' @param cores number of cores to parallelize on for fitting nested models and simulated null LRT distributions.  Default is number of available cores on user device.
 #' @param optim_control_list - option to supply control options to optim.
 #' @return list with attributes from fgwqsr model fitting.
-#' @import statar
-#' @import progressr
 #' @export
 
 fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
@@ -815,7 +799,7 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
 
   if(verbose == T)
   {
-    with_progress(inference_frames <- perform_inference(ll_models = ll_models,
+    progressr::with_progress(inference_frames <- perform_inference(ll_models = ll_models,
                                                         params_logistic_form = params_logistic_form,
                                                         vars = vars, cov_mat = cov_mat,
                                                         zero_threshold_cutoff = zero_threshold_cutoff,
