@@ -11,9 +11,18 @@ plotResults(
   beta_axis_pos = "left"
 )
 }
+\arguments{
+\item{model}{a BGWQSR model object fit from bgwqsr_parallel}
+
+\item{filename}{optional file path to save results of plot in a pdf format}
+
+\item{weight_axis_pos}{choice to put legend for weight plots on the left or right side of plot.  Options are "left" or "right".  Default is "left"}
+
+\item{beta_axis_pos}{choice to put legend for group index plots on the left or right side of plot. Options are "left" or "right".  Default is "left"}
+}
 \value{
-void, prints plots
+void, prints plots, optionally saves plot in pdf format to filename
 }
 \description{
-Plot Results of Beta and Weight Estimates
+A short description...
 }

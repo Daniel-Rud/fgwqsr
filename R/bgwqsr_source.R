@@ -219,8 +219,25 @@ createJagsModelString = function(data,y, vars)
   return(paramList)
 }
 
-bgwqsr_parallel = function(formula, data, quantiles = 4,  n.iter = 1000, n.burnin = 5000,
-                           n.thin = 1, n.chains=3, n.adapt= 1000, inits = NA)
+
+#' Fit a Bayesian Grouped Weighted Quantile Sum Regression Model
+#' @description
+#' Fits a BGWQSR using the runjags package in parallel over multiple cores
+#' @param formula  A formula for model fitting of BGWQSR.  Please see description for formula construction
+#' @param data dataframe that contains all covariates and the outcome data.  Column names of dataframe should match those referenced int he model formula.
+#' @param quantiles number of quantiles to quantize the exposure variables in the mixture portion of the model.  Default value is 5.
+#' @param n.iter number of mcmc iterations after burnin and adapt iterations PER mcmc chain.
+#' @param n.burnin number of mcmc burnin samples
+#' @param n.thin thinning interval for mcmc samples
+#' @param n.chains number of separate independent mcmc chains to use.
+#' @param n.adapt number of mcmc samples to perform mcmc adaption.
+#' @param inits initial values to provide for prior distributions.
+#' @param method method for which
+#' @return list with attributes from fgwqsr model fitting.n
+#' @export
+
+bgwqsr= function(formula, data, quantiles = 5,  n.iter = 1000, n.burnin = 5000,
+                           n.thin = 1, n.chains=3, n.adapt= 1000, inits = NA, method = "parallel")
 {
   f = as.character(formula)
 
@@ -244,11 +261,12 @@ bgwqsr_parallel = function(formula, data, quantiles = 4,  n.iter = 1000, n.burni
 
   save_params = unlist(c(model$betaNames, model$phis, model$weights))
 
-  jags.model = runjags::run.jags(model = modelString, data = data,
+  suppressWarnings(jags.model <- runjags::run.jags(model = modelString, data = data,
                         monitor = save_params,
                         n.chains = n.chains, sample = n.iter, burnin = n.burnin,
-                        adapt = n.adapt, thin = n.thin, method = "parallel",
-                        inits = inits, modules = "glm")
+                        adapt = n.adapt, thin = n.thin, method = method,
+                        inits = inits, modules = "glm"))
+
   jags.model = runjags::add.summary(jags.model)
 
   modelParams = unlist(model[-1])
@@ -272,12 +290,7 @@ bgwqsr_parallel = function(formula, data, quantiles = 4,  n.iter = 1000, n.burni
 #' @export
 plotResults = function(model, filename = NULL, weight_axis_pos = "left", beta_axis_pos = "left")
 {
-  results = results = model$results[[2]]
-
-  if(length(names(model))==3) # if it was run in parallel
-  {
-    results = model$model$summary[[2]]
-  }
+  results = model$model$summaries
 
   #Weight Plotting
 
@@ -292,7 +305,7 @@ plotResults = function(model, filename = NULL, weight_axis_pos = "left", beta_ax
 
   weightNames = unlist(model$vars$mixture)
 
-  weightData = results[which(substr(row.names(results), 1,1)=="w"), c(1,3,5)]
+  weightData = results[which(substr(row.names(results), 1,1)=="w"), c(1,3,4)]
 
   names = row.names(weightData)
 
@@ -321,13 +334,13 @@ plotResults = function(model, filename = NULL, weight_axis_pos = "left", beta_ax
 
   }
 
-  weightPlot = data.frame(name = factor(weightNames, levels = weightNames), group = factor(group), median = weightData[, 2],
-                          L2.5 = weightData[, 1], U97.5 = weightData[, 3]  )
+  weightPlot = data.frame(name = factor(weightNames, levels = weightNames), group = factor(group), mean = weightData[, 3],
+                          L2.5 = weightData[, 1], U97.5 = weightData[, 2]  )
 
 
-  plotWeights = ggplot(data = weightPlot, mapping = aes(x = .data$median, y = .data$name)) +
+  plotWeights = ggplot(data = weightPlot, mapping = aes(x = .data$mean, y = .data$name)) +
     geom_point(mapping = aes(color = .data$group), size = 3) +
-    geom_errorbar(aes(xmin =.data$L2.5, xmax = .data$U97.5), size = .8) + xlab("2.5% quantile, Median, 97.5% quantile")+
+    geom_errorbar(aes(xmin =.data$L2.5, xmax = .data$U97.5), size = .8) + xlab("2.5% quantile, Mean, 97.5% quantile")+
     ylab("Pollutant Name") + scale_y_discrete(position = weight_axis_pos) +
     theme(panel.grid.major.y = element_line(colour = "grey50", size = 0.2))
 
@@ -335,23 +348,23 @@ plotResults = function(model, filename = NULL, weight_axis_pos = "left", beta_ax
 
   #Beta / Phi Plotting
 
-  betas = results[which(substr(row.names(results), 1,1)=="B"), c(1,3,5)]
-  phis = results[which(substr(row.names(results), 1,1)=="p"), c(1,3,5)]
+  betas = results[which(substr(row.names(results), 1,1)=="B"), c(1,3,4)]
+  phis = results[which(substr(row.names(results), 1,1)=="p"), c(1,3,4)]
 
   effectEstimates = rbind(betas, phis)
 
   significant = ifelse(effectEstimates[,1]>0 | effectEstimates[,3]<0, "sig", "insig")
 
-  effectData = data.frame(name = factor(row.names(effectEstimates)), median = effectEstimates[, 2],
-                          L2.5 = effectEstimates[,1], U97.5 = effectEstimates[, 3],
+  effectData = data.frame(name = factor(row.names(effectEstimates)), mean = effectEstimates[, 3],
+                          L2.5 = effectEstimates[,1], U97.5 = effectEstimates[, 2],
                           significant = factor(significant))
 
-  plotBetas = ggplot(data = effectData, mapping = aes(x = .data$median, y = .data$name)) +
+  plotBetas = ggplot(data = effectData, mapping = aes(x = .data$mean, y = .data$name)) +
     geom_vline(xintercept = 0, linetype = "longdash", colour = "red") +
     geom_point(size = 3, aes(color = .data$significant)) +
     scale_color_manual(values = c("sig" = "red", "insig" = "black")) +
     geom_errorbar(aes(xmin =.data$L2.5, xmax = .data$U97.5), size = .8) + ylab("Effect Name") +
-    xlab("2.5% quantile, Median, 97.5% quantile") +
+    xlab("2.5% quantile, Mean, 97.5% quantile") +
     scale_y_discrete(position = beta_axis_pos) +
     theme(panel.grid.major.y = element_line(colour = "grey50", size = 0.2))
 
@@ -376,14 +389,11 @@ plotResults = function(model, filename = NULL, weight_axis_pos = "left", beta_ax
 #' @export
 plotWeights = function(model, filename = NULL, weight_axis_pos = "left")
 {
+  results = model$model$summaries
+
+  #Weight Plotting
+
   numMixes = length(model$vars$mixture)
-
-  results = model$results[[2]]
-
-  if(length(names(model))==3) # if it was run in parallel
-  {
-    results = model$model$summary[[2]]
-  }
 
   group = c() # for group category
 
@@ -394,7 +404,7 @@ plotWeights = function(model, filename = NULL, weight_axis_pos = "left")
 
   weightNames = unlist(model$vars$mixture)
 
-  weightData = results[which(substr(row.names(results), 1,1)=="w"), c(1,3,5)]
+  weightData = results[which(substr(row.names(results), 1,1)=="w"), c(1,3,4)]
 
   names = row.names(weightData)
 
@@ -423,13 +433,13 @@ plotWeights = function(model, filename = NULL, weight_axis_pos = "left")
 
   }
 
-  weightPlot = data.frame(name = factor(weightNames, levels = weightNames), group = factor(group), median = weightData[, 2],
-                          L2.5 = weightData[, 1], U97.5 = weightData[, 3] )
+  weightPlot = data.frame(name = factor(weightNames, levels = weightNames), group = factor(group), mean = weightData[, 3],
+                          L2.5 = weightData[, 1], U97.5 = weightData[, 2]  )
 
 
-  plotWeights = ggplot(data = weightPlot, mapping = aes(x = .data$median, y = .data$name)) +
+  plotWeights = ggplot(data = weightPlot, mapping = aes(x = .data$mean, y = .data$name)) +
     geom_point(mapping = aes(color = .data$group), size = 3) +
-    geom_errorbar(aes(xmin =.data$L2.5, xmax = .data$U97.5), size = .8) + xlab("2.5% quantile, Median, 97.5% quantile")+
+    geom_errorbar(aes(xmin =.data$L2.5, xmax = .data$U97.5), size = .8) + xlab("2.5% quantile, Mean, 97.5% quantile")+
     ylab("Pollutant Name") + scale_y_discrete(position = weight_axis_pos) +
     theme(panel.grid.major.y = element_line(colour = "grey50", size = 0.2))
 
@@ -457,30 +467,26 @@ plotWeights = function(model, filename = NULL, weight_axis_pos = "left")
 
 plotBetas = function(model, filename = NULL, beta_axis_pos = "left") # enter just name of file, not with .pdf
 {
-  results = model$results[[2]]
+  results = model$model$summaries
 
-  if(length(names(model))==3) # if it was run in parallel
-  {
-    results = model$model$summary[[2]]
-  }
 
-  betas = results[which(substr(row.names(results), 1,1)=="B"), c(1,3,5)]
-  phis = results[which(substr(row.names(results), 1,1)=="p"), c(1,3,5)]
+  betas = results[which(substr(row.names(results), 1,1)=="B"), c(1,3,4)]
+  phis = results[which(substr(row.names(results), 1,1)=="p"), c(1,3,4)]
 
   effectEstimates = rbind(betas, phis)
 
   significant = ifelse(effectEstimates[,1]>0 | effectEstimates[,3]<0, "sig", "insig")
 
-  effectData = data.frame(name = factor(row.names(effectEstimates)), median = effectEstimates[, 2],
-                          L2.5 = effectEstimates[,1], U97.5 = effectEstimates[, 3],
+  effectData = data.frame(name = factor(row.names(effectEstimates)), mean = effectEstimates[, 3],
+                          L2.5 = effectEstimates[,1], U97.5 = effectEstimates[, 2],
                           significant = factor(significant))
 
-  plotBetas = ggplot(data = effectData, mapping = aes(x = .data$median, y = .data$name)) +
-    geom_vline(xintercept = 0, linetype = "longdash", colour = "red")+
+  plotBetas = ggplot(data = effectData, mapping = aes(x = .data$mean, y = .data$name)) +
+    geom_vline(xintercept = 0, linetype = "longdash", colour = "red") +
     geom_point(size = 3, aes(color = .data$significant)) +
     scale_color_manual(values = c("sig" = "red", "insig" = "black")) +
     geom_errorbar(aes(xmin =.data$L2.5, xmax = .data$U97.5), size = .8) + ylab("Effect Name") +
-    xlab("2.5% quantile, Median, 97.5% quantile")  +
+    xlab("2.5% quantile, Mean, 97.5% quantile") +
     scale_y_discrete(position = beta_axis_pos) +
     theme(panel.grid.major.y = element_line(colour = "grey50", size = 0.2))
 

@@ -725,13 +725,13 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
 #' Fit a FGWQSR Model
 #'
 #' @param formula A formula for model fitting of FGWQSR.  Please see description for formula construction
-#' @param data R dataframe that contains all covariates and the outcome data
+#' @param data  dataframe that contains all covariates and the outcome data.  Column names of dataframe should match those referenced int he model formula.
 #' @param quantiles number of quantiles to quantize the exposure variables in the mixture portion of the model.  Default value is 5.
 #' @param n_mvn_sims defines resolution for simulated null distribution for group index and single chemical LRTs.  Default is 10,000.
 #' @param zero_threshold_cutoff defines a .
 #' @param verbose Displays messages and progress bar while fitting FGWQSR model.  Default is TRUE.
 #' @param cores number of cores to parallelize on for fitting nested models and simulated null LRT distributions.  Default is number of available cores on user device.
-#' @param optim_control_list - option to supply control options to optim.
+#' @param optim_control_list option to supply control options to optim.
 #' @return list with attributes from fgwqsr model fitting.
 #' @export
 

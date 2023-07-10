@@ -6,9 +6,16 @@
 \usage{
 plotWeights(model, filename = NULL, weight_axis_pos = "left")
 }
+\arguments{
+\item{model}{a BGWQSR model object fit from bgwqsr_parallel}
+
+\item{filename}{optional file path to save results of plot in a pdf format}
+
+\item{weight_axis_pos}{choice to put legend for weight plots on the left or right side of plot.  Options are "left" or "right".  Default is "left"}
+}
 \value{
-void, prints plots
+void, prints weight plot, optionally saves plot in pdf format to filename
 }
 \description{
-Plot Weight Results
+Plots the 95% credible intervals for each single chemical weight, along with posterior mean weight estimates, from the BGWQSR weight posterior distributions.
 }

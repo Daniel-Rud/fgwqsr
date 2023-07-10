@@ -18,7 +18,7 @@ fgwqsr(
 \arguments{
 \item{formula}{A formula for model fitting of FGWQSR.  Please see description for formula construction}
 
-\item{data}{R dataframe that contains all covariates and the outcome data}
+\item{data}{dataframe that contains all covariates and the outcome data.  Column names of dataframe should match those referenced int he model formula.}
 
 \item{quantiles}{number of quantiles to quantize the exposure variables in the mixture portion of the model.  Default value is 5.}
 
@@ -30,7 +30,7 @@ fgwqsr(
 
 \item{cores}{number of cores to parallelize on for fitting nested models and simulated null LRT distributions.  Default is number of available cores on user device.}
 
-\item{optim_control_list}{- option to supply control options to optim.}
+\item{optim_control_list}{option to supply control options to optim.}
 }
 \value{
 list with attributes from fgwqsr model fitting.
