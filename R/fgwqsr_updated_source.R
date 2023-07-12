@@ -733,6 +733,13 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
 #' @param cores number of cores to parallelize on for fitting nested models and simulated null LRT distributions.  Default is number of available cores on user device.
 #' @param optim_control_list option to supply control options to optim.
 #' @return list with attributes from fgwqsr model fitting.
+#' @description
+#' fgwqsr fits a group signed constrained logistic regression with inference for both group indices and single chemical effects.
+#' The model formula that we pass to fgwqsr() is different than traditional formulas in lm and glm, as we will need to denote our mixture groups.  Three special characters are used in fgwqsr formulas:
+#'  * $|$ - denotes the boundary of a mixture group, used to separate chemicals within a mixture group
+#'  * $/$ - denotes the end of the mixture group specification, adjusting covariates can be added to the formula after this character.  If no adjusting covariates, do not need to specify
+#'  * i. - precedes categorical variables to denote a categorical variable.  For example, if we have a categorical variable cat_var, we would denote this in the model formula by i.cat_var.  This is similar to the stata syntax to declare categorical variables.
+#'
 #' @export
 
 fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
@@ -745,6 +752,129 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
 
   # get formula and vars object that stores info about model
   f = as.character(formula); vars = clean_vars(gsub("\n", "", f[3]))
+
+  # perform initial checks ##################################################
+  # check if formula
+  if(!is.formula(formula))
+  {
+    stop("The formula argument must be of type formula.
+         If using a string formula, consider using as.formula(formula).")
+  }
+
+  # check if data is a dataframe
+  if(!is.data.frame(data))
+  {
+    stop("The data argument must be a dataframe object.
+         Please ensure that it is a dataframe, where the
+         columnames of the dataframe correspond to the variable
+         names referenced in the model formula.")
+  }
+
+  # check that outcome variable is a 0 1 numeric variable
+  if(!is.numeric(data[f[3]]))
+    # check that the vector is numeric
+  {
+    stop("The outcome variable must be coded as a numeric vector with
+         0 denoting controls and 1 denoting cases")
+  }else if(sum(unique(data[f[3]]) %in% c(0,1)) != length(data[f[3]]))
+    # if the vector is numeric, make sure its elements are only 0s or 1s
+  {
+    stop("The outcome variable must be coded as a numeric vector with
+         0 denoting controls and 1 denoting cases")
+  }
+
+  # check if the outcome has both cases and controls -- make sure percentage
+  # of cases is at least greater than 1%
+
+  if(sum(data[f[3]]) == 0) # if only 0s in outcome vector (controls)
+  {
+    stop("Outcome variable only contains controls, please check outcome variable coding.")
+
+  } else if (sum(data[f[3]]) == nrow(data))# if only 1s in outcome vector (cases)
+  {
+    stop("Outcome variable only contains cases, please check outcome variable coding.")
+
+  } else if(sum(data[f[3]]) / nrow(data) < .05)
+  {
+    warning("Case control ratio is extremely unproportional.  Less than 5% of observations are cases.  Proceed with caution.")
+  }
+
+  # check if variables in formula are in dataframe
+  all_vars = c(vars$mixture %>% unlist, vars$continuous, vars$categorical)
+
+  if( sum(all_vars %in% colnames(data)) != length(all_vars))
+  {
+    missing_vars = all_vars[which(!(all_vars %in% colnames(data)))]
+    stop(paste0("The following variable names included in the model formula are not included
+         as columnames in the passed `data` argument: ", paste(all_vars, collapse = ", "), "."))
+  }
+
+  # check if quantiles variable is within reasonable range
+
+  if(quantiles <= 1)
+  {
+    message("Quantiles variable should be greater than 1.  Resetting to default value of 5.")
+    quantiles = 5
+  }else if(quantiles > 10)
+  {
+    warning("Consider setting quantiles argument to no larger than deciles (quantiles = 10)")
+  }else if(quantiles >20)
+  {
+    message("Quantiles argument should be less than 20.  Resetting to default value of 5.")
+    quantiles = 5
+  }
+
+  # check if n_mvn_sims >= 100
+  if(n_mvn_sims < 100)
+  {
+    message("The n_mvn_sims argument must be greater than 100.  Resetting to default value of 10,000")
+    n_mvn_sims = 10000
+  }
+
+  # check if zero_threshold_cutoff is in [0,.5]
+  if(zero_threshold_cutoff < 0 || zero_threshold_cutoff > .5)
+  {
+    message("The zero_threshold_cutoff argument must be within [0,0.5].  Resetting to the default value of 0.5.")
+    zero_threshold_cutoff = .5
+  }
+
+  # check that verbose is of type boolean
+  if(!is.logical(verbose))
+  {
+    message("The verbose argument must be of type logical (either T or F).  Resetting to the default value of T.")
+    verbose = T
+  }
+
+  # check that cores > 0, if cores > available cores,
+  if(cores <= 0 || cores > availableCores())
+  {
+    message(paste0("The cores argument must be between 1 and ", availableCores(),
+                  ".  Resetting to the default value which is the result of the availableCores() call, ", availableCores(), "."))
+    cores = availableCores()
+  }
+
+  # check arguments in optim control list
+
+  if(!setequal(optim_control_list, list(maxit = 1000, factr = 1E-12, fnscale = 1)))
+  {
+    optim_control_opts = c("trace", "fnscale", "parscale", "ndeps", "maxit",
+                           "abstol", "reltol", "alpha", "beta", "gamma", "REPORT",
+                           "warn.1d.NelderMead", "type", "lmm", "factr", "pgtol",
+                           "temp", "tmax") # all optim control parameters
+
+    # if there are names in the optim list that are not optim control parameters
+    if( sum(names(optim_control_list) %in% optim_control_opts) != length(optim_control_list))
+    {
+      failed_names = names(optim_control_list)[which(!(names(optim_control_list) %in% optim_control_opts))]
+
+      message("The following optim control parameters passed in optim_control_list are not optim control parameters: ",
+              paste0(failed_names, collapse = ", "), ".  Resetting to the default optim control options list")
+
+      optim_control_list = list(maxit = 1000, factr = 1E-12, fnscale = 1)
+    }
+  }
+
+  ###########################################################################
 
   # get list of formulas to run submodels for LRT
   formulas = c(c(paste(format(formula), collapse = ""),get_formulas(vars,formula)))
