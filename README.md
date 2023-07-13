@@ -16,6 +16,8 @@ runjags package.
 
 <br> FGWQSR estimates parameters to the following model:
 
+<br>
+
 $$y_i \sim \text{Bernoulli}(\pi_i) $$
 $$\text{logit}(\pi_i) = c_0+ \sum\limits_{g = 1}^G \gamma_g \bigg( \sum\limits_{k = 1} ^{c_g} w_{g,k} \cdot q_{g,k,i}\bigg) + \sum_{r = 1}^R \phi_rz_{r,i} $$
 where
@@ -351,7 +353,7 @@ summary(fgwqsr_fit)
 #> 
 #> Significance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' 
 #> 
-#> Total runtime for FGWQSR:  1.21 minutes on 10 cores.
+#> Total runtime for FGWQSR:  1.2 minutes on 10 cores.
 ```
 
 <br> We can compare the true underlying group indices and chemical
@@ -520,7 +522,7 @@ summary(fgwqsr_fit_adj)
 #> 
 #> Significance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' 
 #> 
-#> Total runtime for FGWQSR:  1.13 minutes on 10 cores.
+#> Total runtime for FGWQSR:  1.15 minutes on 10 cores.
 ```
 
 <br>
@@ -600,7 +602,7 @@ bgwqsr_fit = bgwqsr(formula = mod_formula_adj,
 #> Calling 3 simulations using the parallel method...
 #> Following the progress of chain 1 (the program will wait for all chains
 #> to finish before continuing):
-#> Welcome to JAGS 4.3.2 (official binary) on Thu Jul 13 16:39:27 2023
+#> Welcome to JAGS 4.3.2 (official binary) on Thu Jul 13 16:53:43 2023
 #> JAGS is free software and comes with ABSOLUTELY NO WARRANTY
 #> Loading module: basemod: ok
 #> Loading module: bugs: ok
@@ -641,49 +643,49 @@ the summaries object from the bgwqsr model.
 ``` r
 bgwqsr_fit$model$summaries
 #>                      Lower95      Median    Upper95        Mean          SD
-#> B0              -3.66123e+00 -2.39290500 -1.1861800 -2.39739069 0.634468040
-#> B1              -7.72786e-01 -0.72645600 -0.6800990 -0.72660810 0.023277413
-#> B2               2.37607e-02  0.06537670  0.1003650  0.06536587 0.019642886
-#> B3               3.63499e-01  0.40572200  0.4474280  0.40561747 0.021839322
-#> phi_weight       1.89506e-02  0.03606285  0.0550746  0.03618030 0.009279348
-#> phi_city_city_2  7.34225e-02  0.18715100  0.3012290  0.18582929 0.058262250
-#> phi_city_city_3 -1.15691e+00 -1.04109500 -0.9208620 -1.04254740 0.060202532
-#> w1[1]            3.04382e-01  0.35634400  0.4028740  0.35519930 0.025022040
-#> w1[2]            2.24530e-01  0.27524900  0.3275130  0.27527586 0.027174372
-#> w1[3]            2.73493e-01  0.32465400  0.3750100  0.32459352 0.025632267
-#> w1[4]            1.42449e-03  0.01984735  0.0530367  0.02323464 0.016088007
-#> w1[5]            1.12253e-03  0.01720880  0.0528875  0.02169668 0.016733905
-#> w2[1]            3.67407e-05  0.06011960  0.4136620  0.11226925 0.141633116
-#> w2[2]            2.26175e-01  0.64955500  0.9632770  0.62196864 0.215645672
-#> w2[3]            3.07270e-04  0.06649090  0.4829810  0.13660496 0.159574279
-#> w2[4]            2.15090e-03  0.07107550  0.4630890  0.12915714 0.145145484
-#> w3[1]            2.20125e-01  0.31116300  0.4052840  0.31066550 0.047176347
-#> w3[2]            2.19036e-01  0.31893700  0.4000210  0.31852408 0.045626503
-#> w3[3]            2.54194e-01  0.34016300  0.4388580  0.34185267 0.048814994
-#> w3[4]            3.60342e-05  0.01048015  0.0532486  0.01632025 0.018750977
-#> w3[5]            4.91520e-04  0.00627269  0.0457712  0.01263749 0.015396609
-#>                 Mode        MCerr MC%ofSD SSeff        AC.10      psrf
-#> B0                NA 0.0194944981     3.1  1059  0.073421818 1.0007923
-#> B1                NA 0.0006149110     2.6  1433  0.009592373 1.0073064
-#> B2                NA 0.0005063518     2.6  1505  0.032182820 1.0016705
-#> B3                NA 0.0006025792     2.8  1314 -0.003453728 1.0031507
-#> phi_weight        NA 0.0002872937     3.1  1043  0.076869836 1.0007030
-#> phi_city_city_2   NA 0.0021934538     3.8   706  0.077124829 1.0014526
-#> phi_city_city_3   NA 0.0017505307     2.9  1183  0.016120407 0.9997214
-#> w1[1]             NA 0.0014826534     5.9   285  0.139924144 1.0098148
-#> w1[2]             NA 0.0016370561     6.0   276  0.254728423 1.1046637
-#> w1[3]             NA 0.0013094884     5.1   383  0.143430848 1.0142796
-#> w1[4]             NA 0.0028510016    17.7    32  0.824486353 1.3104306
-#> w1[5]             NA 0.0035531520    21.2    22  0.859320780 1.4968418
-#> w2[1]             NA 0.0309624037    21.9    21  0.826824935 1.7068957
-#> w2[2]             NA 0.0370243826    17.2    34  0.806995509 1.0722833
-#> w2[3]             NA 0.0260563107    16.3    38  0.805258053 1.1934215
-#> w2[4]             NA 0.0234176703    16.1    38  0.755691107 1.4542547
-#> w3[1]             NA 0.0034160290     7.2   191  0.286905730 1.0207991
-#> w3[2]             NA 0.0030011662     6.6   231  0.246041668 1.0043634
-#> w3[3]             NA 0.0032776357     6.7   222  0.246060417 1.0017560
-#> w3[4]             NA 0.0028892295    15.4    42  0.818470479 1.4263795
-#> w3[5]             NA 0.0033045455    21.5    22  0.862353513 1.1111806
+#> B0              -3.651920000 -2.27815500 -1.0700100 -2.28266497 0.660029173
+#> B1              -0.771817000 -0.72599650 -0.6790350 -0.72587763 0.023888107
+#> B2               0.027681000  0.06506000  0.1070880  0.06531566 0.020266320
+#> B3               0.363868000  0.40557950  0.4487600  0.40568180 0.021959541
+#> phi_weight       0.017702300  0.03438805  0.0553166  0.03456578 0.009658224
+#> phi_city_city_2  0.000252172  0.18119350  0.2865510  0.17389172 0.073724241
+#> phi_city_city_3 -1.182230000 -1.04730500 -0.9247720 -1.04811690 0.065321807
+#> w1[1]            0.301526000  0.35394100  0.4043110  0.35447934 0.025110695
+#> w1[2]            0.228792000  0.27677100  0.3239400  0.27663721 0.024087736
+#> w1[3]            0.272610000  0.32303200  0.3656150  0.32342540 0.024922922
+#> w1[4]            0.002924070  0.02513750  0.0519143  0.02520196 0.014890445
+#> w1[5]            0.003806210  0.01846310  0.0394350  0.02025609 0.011317820
+#> w2[1]            0.005183060  0.14507250  0.5597240  0.19835967 0.169179303
+#> w2[2]            0.201965000  0.58669200  0.9251560  0.57358199 0.204893546
+#> w2[3]            0.000759610  0.06642060  0.3984120  0.12355657 0.137690018
+#> w2[4]            0.001652330  0.05036820  0.3730860  0.10450176 0.125653074
+#> w3[1]            0.213352000  0.30505950  0.3988060  0.30532584 0.047157307
+#> w3[2]            0.229635000  0.31602700  0.4019810  0.31611886 0.044047605
+#> w3[3]            0.247347000  0.33971300  0.4217930  0.33934420 0.044837968
+#> w3[4]            0.000582802  0.01748110  0.0554424  0.02049139 0.018384662
+#> w3[5]            0.000380900  0.00970993  0.0686573  0.01871971 0.021925203
+#>                 Mode        MCerr MC%ofSD SSeff        AC.10     psrf
+#> B0                NA 0.0391454326     5.9   284  0.165187016 1.012575
+#> B1                NA 0.0006818782     2.9  1227  0.002752647 1.002315
+#> B2                NA 0.0005166076     2.5  1539  0.031775029 1.001713
+#> B3                NA 0.0005955145     2.7  1360 -0.007846648 1.007213
+#> phi_weight        NA 0.0005773885     6.0   280  0.166251889 1.009272
+#> phi_city_city_2   NA 0.0034667307     4.7   452  0.276555205 1.111936
+#> phi_city_city_3   NA 0.0023102811     3.5   799  0.087299442 1.030917
+#> w1[1]             NA 0.0012737224     5.1   389  0.112090940 1.011909
+#> w1[2]             NA 0.0013039205     5.4   341  0.122131798 1.014405
+#> w1[3]             NA 0.0013552112     5.4   338  0.085278262 1.026837
+#> w1[4]             NA 0.0024195588    16.2    38  0.774753459 1.200346
+#> w1[5]             NA 0.0016464006    14.5    47  0.735827443 1.186657
+#> w2[1]             NA 0.0260361292    15.4    42  0.767105172 1.175408
+#> w2[2]             NA 0.0264447075    12.9    60  0.676737610 1.610980
+#> w2[3]             NA 0.0250080142    18.2    30  0.807414212 1.115628
+#> w2[4]             NA 0.0195048118    15.5    42  0.764419086 1.436253
+#> w3[1]             NA 0.0031495200     6.7   224  0.230762019 1.025377
+#> w3[2]             NA 0.0028722974     6.5   235  0.249815408 1.007689
+#> w3[3]             NA 0.0026811067     6.0   280  0.133559098 1.048325
+#> w3[4]             NA 0.0035710523    19.4    27  0.817929266 1.200438
+#> w3[5]             NA 0.0041788292    19.1    28  0.826218678 1.494243
 ```
 
 We can analyze the mixing of the markov chains and corresponding
@@ -691,28 +693,32 @@ autocorrelation plots using functions from the coda package. We will
 output only the first few plots.
 
 ``` r
+par(mfrow = c(3,3))
 coda::traceplot(bgwqsr_fit$model$mcmc) # traceplot
 ```
 
-<img src="man/figures/README-unnamed-chunk-18-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-3.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-4.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-5.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-6.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-7.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-8.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-9.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-10.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-11.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-12.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-13.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-14.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-15.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-16.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-17.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-18.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-19.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-20.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-21.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-18-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-3.png" width="100%" />
 
 ``` r
+par(mfrow = c(3,3))
 coda::autocorr.plot(bgwqsr_fit$model$mcmc, auto.layout = F, ask = F) # autocorrelation plot
 ```
 
-<img src="man/figures/README-unnamed-chunk-19-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-3.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-4.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-5.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-6.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-7.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-8.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-9.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-10.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-11.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-12.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-13.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-14.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-15.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-16.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-17.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-18.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-19.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-20.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-21.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-22.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-23.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-24.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-25.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-26.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-27.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-28.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-29.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-30.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-31.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-32.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-33.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-34.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-35.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-36.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-37.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-38.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-39.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-40.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-41.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-42.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-43.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-44.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-45.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-46.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-47.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-48.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-49.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-50.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-51.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-52.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-53.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-54.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-55.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-56.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-57.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-58.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-59.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-60.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-61.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-62.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-63.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-19-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-3.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-4.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-5.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-6.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-7.png" width="100%" />
 
 ``` r
+par(mfrow = c(3,3))
 coda::densplot(bgwqsr_fit$model$mcmc) # posterior density plots
 ```
 
-<img src="man/figures/README-unnamed-chunk-20-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-3.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-4.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-5.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-6.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-7.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-8.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-9.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-10.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-11.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-12.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-13.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-14.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-15.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-16.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-17.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-18.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-19.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-20.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-21.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-20-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-3.png" width="100%" />
 
 ``` r
+par(mfrow = c(3,3))
 plot(bgwqsr_fit$model$mcmc, auto.layout = F) # combines traceplot() and densplot()
 ```
 
-<img src="man/figures/README-unnamed-chunk-21-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-3.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-4.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-5.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-6.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-7.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-8.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-9.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-10.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-11.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-12.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-13.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-14.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-15.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-16.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-17.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-18.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-19.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-20.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-21.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-22.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-23.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-24.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-25.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-26.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-27.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-28.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-29.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-30.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-31.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-32.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-33.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-34.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-35.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-36.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-37.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-38.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-39.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-40.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-41.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-42.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-21-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-3.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-4.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-5.png" width="100%" />
 
 Finally, we can look at plots for the posterior credible intervals for
 group indices, single chemical weights, and corresponding posterior

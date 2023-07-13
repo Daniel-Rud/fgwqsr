@@ -24,6 +24,7 @@ Fully frequentist model fitting procedure for the weighted quantile sum regressi
 <br>
 FGWQSR estimates parameters to the following model: 
 
+<br>
 
 $$y_i \sim \text{Bernoulli}(\pi_i) $$
 $$\text{logit}(\pi_i) = c_0+ \sum\limits_{g = 1}^G \gamma_g \bigg( \sum\limits_{k = 1} ^{c_g} w_{g,k} \cdot q_{g,k,i}\bigg) + \sum_{r = 1}^R \phi_rz_{r,i} $$
@@ -395,19 +396,23 @@ We can analyze the mixing of the markov chains and corresponding autocorrelation
 output only the first few plots.
 
 ```{r, figure.width = 10, figure.height = 10}
+par(mfrow = c(3,3))
 coda::traceplot(bgwqsr_fit$model$mcmc) # traceplot
 ```
 
 ```{r, figure.width = 10, figure.height = 10}
+par(mfrow = c(3,3))
 coda::autocorr.plot(bgwqsr_fit$model$mcmc, auto.layout = F, ask = F) # autocorrelation plot
 ```
 
 
 ```{r, figure.width = 10, figure.height = 10}
+par(mfrow = c(3,3))
 coda::densplot(bgwqsr_fit$model$mcmc) # posterior density plots
 ```
 
 ```{r, figure.width = 10, figure.height = 10}
+par(mfrow = c(3,3))
 plot(bgwqsr_fit$model$mcmc, auto.layout = F) # combines traceplot() and densplot()
 
 ```
