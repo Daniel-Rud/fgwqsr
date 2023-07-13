@@ -56,7 +56,9 @@ underlying chemical exposure variables, with mixture groups of sizes
 (5,4,5) and weight distribution
 
 - $\mathbf{w}_1 = (1/3,1/3,1/3,0,0)$
+
 - $\mathbf{w}_2 = (1/2,1/2, 0, 0)$
+
 - $\mathbf{w}_3 = (1/3,1/3,1/3,0,0)$.
 
 We will use a fixed correlation structure such that the correlation of
@@ -224,18 +226,19 @@ be different than traditional formulas in lm and glm, as we will need to
 denote our mixture groups. Three special characters are used in fgwqsr
 formulas: <br>
 
-- $|$ - denotes the boundary of a mixture group, used to seperate
+- `|` denotes the boundary of a mixture group, used to seperate
   chemicals within a mixture group.
 
-- $/$ - denotes the end of the mixture group specification, adjusting
+- `/` - denotes the end of the mixture group specification, adjusting
   covariates can be added to the formula after this character. If no
   adjusting covariates, do not need to specify.
 
-- 1.  - precedes categorical variables to denote a categorical variable.
-        For example, if we have a categorical variable cat_var, we would
-        denote this in the model formula by i.cat_var. This is similar
-        to the stata syntax to declare categorical variables.  
-        <br> The fgwqsr() function has other options too: <br>
+- `i.` - precedes categorical variables to denote a categorical
+  variable. For example, if we have a categorical variable cat_var, we
+  would denote this in the model formula by i.cat_var. This is similar
+  to the stata syntax to declare categorical variables.
+
+<br> The fgwqsr() function has other options too: <br>
 
 - data - should be a data frame object containing variable columnames
   referenced in model formula (cat vars do not need to be named with i.
@@ -245,16 +248,16 @@ formulas: <br>
   the mixture portion of the model
 
 - n_mvn_sims - defines resolution for simulated null distribution for
-  group index and single chemical LRTs. Default is 10,000.  
+  group index and single chemical LRTs. Default is 10,000.
 
 - zero_threshold_cutoff - defines a .
 
 - verbose - Displays messages and progress bar while fitting FGWQSR
-  model. Default is TRUE.  
+  model. Default is TRUE.
 
 - cores - number of cores to parallelize on for fitting nested models
   and simulated null LRT distributions. Default is number of available
-  cores on user device.  
+  cores on user device.
 
 - optim_control_list - option to supply control options to optim.
 
