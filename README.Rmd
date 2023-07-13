@@ -1,25 +1,27 @@
 ---
-title: "Vignette for Frequentist Grouped Weighted Quantile Sum Regression"
-author: "Daniel Rud"
-date: "`r Sys.Date()`"
-output: rmarkdown::html_vignette
-vignette: >
-  %\VignetteIndexEntry{Vignette for Frequentist Grouped Weighted Quantile Sum Regression}
-  %\VignetteEngine{knitr::rmarkdown}
-  %\VignetteEncoding{UTF-8}
+output: github_document
 ---
 
-```{r setup, include = FALSE}
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
-  comment = "#>"
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
 )
 ```
+
+# fgwqsr
+
+<!-- badges: start -->
+<!-- badges: end -->
 
 
 # Introduction 
 <br>
-In this vignette, we will showcase how to fit FGWQSR models on cross sectional data with a binary outcome.  FGWQSR estimates parameters to the following model: 
+FGWQSR estimates parameters to the following model: 
 \begin{align}
 y_i &\sim \text{Bernoulli}(\pi_i) \\ 
 \text{logit}(\pi_i) &= c_0+ \sum\limits_{g = 1}^G \gamma_g \bigg( \sum\limits_{k = 1} ^{c_g} w_{g,k} \cdot q_{g,k,i}\bigg) + \sum_{r = 1}^R \phi_rz_{r,i}  \label{eq:2}
@@ -41,6 +43,22 @@ where
 and $\sum_{k = 1}^{c_g} w_{g,k} =1$, $w_{g,k} \in (0,1)$.  
 
 <br>
+
+
+
+## Installation
+
+You can install the development version of fgwqsr from [GitHub](https://github.com/) with:
+
+``` r
+# install.packages("devtools")
+devtools::install_github("Daniel-Rud/fgwqsr_package")
+```
+
+```{r example}
+library(fgwqsr)
+## basic example code
+```
 
 # Load Packages
 
@@ -328,68 +346,6 @@ group_index_frame; weight_frame; adj_cov_frame
 
 ```
 
-# Fitting Models with BGWQSR 
-
-We also provide in this package functions to run BGWQSR models using the runjags package.  The bgwqsr() function takes a model formulation similar to that in fgwqsr(), also utilizing the special characters "$|$", "$/$", and "i.".  Fitting the BGWQSR model using runjags allows us to leverage the "parallel" method in runjags that allows us to fit independent mcmc chains on multiple cores, speeding up fitting time.  
-
-
-```{r}
-
-bgwqsr_fit = bgwqsr(formula = mod_formula_adj, 
-                    data = data, 
-                    quantiles = 5, 
-                    n.iter = 1000,
-                    n.burnin = 40, 
-                    n.thin = 1, n.chains = 3, 
-                    n.adapt = 10, 
-                    method = "parallel")
-
-```
-<br>
-
-To retrieve the summary measures from the MCMC sampling, we can extract the summaries object from the bgwqsr model.   
-
-```{r}
-bgwqsr_fit$model$summaries
-```
-
-We can analyze the mixing of the markov chains and corresponding autocorrelation plots using functions from the coda package.  We will 
-output only the first few plots.
-
-```{r, figure.width = 10, figure.height = 10}
-coda::traceplot(bgwqsr_fit$model$mcmc) # traceplot
-```
-
-```{r, figure.width = 10, figure.height = 10}
-coda::autocorr.plot(bgwqsr_fit$model$mcmc, auto.layout = F, ask = F) # autocorrelation plot 
-```
-
-
-```{r, figure.width = 10, figure.height = 10}
-coda::densplot(bgwqsr_fit$model$mcmc) # posterior density plots
-```
-
-```{r, figure.width = 10, figure.height = 10}
-plot(bgwqsr_fit$model$mcmc, auto.layout = F) # combines traceplot() and densplot()
-
-```
-
-
-Finally, we can look at plots for the posterior credible intervals for group indices, single chemical weights, and corresponding posterior means.  To do this, we can use the functions plotWeights(), plotBetas(), and plotResult().  plotResults() combines both plots generates by plotWeights and plotBetas into a side by side figure.  Below are code examples for each of the three function calls.  
-
-```{r}
-plot_betas(bgwqsr_fit)
-```
-
-```{r}
-plot_weights(bgwqsr_fit)
-```
-
-```{r, fig.width = 12}
-plot_results(bgwqsr_fit)
-```
-
-
-
+You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date. `devtools::build_readme()` is handy for this.
 
 

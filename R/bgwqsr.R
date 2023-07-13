@@ -9,7 +9,7 @@
 # i. denotes creating a categorical response
 
 
-cleanVars = function(vars) # separates formula into mixture component, continuous confounder,
+clean_vars = function(vars) # separates formula into mixture component, continuous confounder,
   # and categorical confounder names
 {
   sep = strsplit(vars, split = "/", fixed = TRUE)[[1]]
@@ -52,7 +52,7 @@ cleanVars = function(vars) # separates formula into mixture component, continuou
   return(variables)
 }
 
-quantizeVars = function(data, vars, quantiles)
+quantize_vars = function(data, vars, quantiles)
 {
 
   mixtureComps = unlist(vars$mixture)
@@ -65,7 +65,7 @@ quantizeVars = function(data, vars, quantiles)
   return(data)
 }
 
-createJagsModelString = function(data,y, vars)
+create_jags_model_string = function(data,y, vars)
 {
   numBetas = length(vars$mixture)
 
@@ -227,33 +227,33 @@ createJagsModelString = function(data,y, vars)
 #' @param data dataframe that contains all covariates and the outcome data.  Column names of dataframe should match those referenced int he model formula.
 #' @param quantiles number of quantiles to quantize the exposure variables in the mixture portion of the model.  Default value is 5.
 #' @param n.iter number of mcmc iterations after burnin and adapt iterations PER mcmc chain.
-#' @param n.burnin number of mcmc burnin samples
-#' @param n.thin thinning interval for mcmc samples
+#' @param n.burnin number of mcmc burnin samples PER mcmc chain
+#' @param n.thin thinning interval for mcmc samples PER mcmc chain
 #' @param n.chains number of separate independent mcmc chains to use.
-#' @param n.adapt number of mcmc samples to perform mcmc adaption.
+#' @param n.adapt number of mcmc samples to perform mcmc adaption PER mcmc chain.
 #' @param inits initial values to provide for prior distributions.
 #' @param method method for which
 #' @return list with attributes from fgwqsr model fitting.n
 #' @export
 
 bgwqsr= function(formula, data, quantiles = 5,  n.iter = 10000 / n.chains, n.burnin = 5000,
-                           n.thin = 1, n.chains=3, n.adapt= 1000, inits = NA, method = "parallel")
+                 n.thin = 1, n.chains=3, n.adapt= 1000, inits = NA, method = "parallel")
 {
+  if(!inherits(formula,"formula"))
+  {
+    stop("The formula argument must be of type formula.
+         If using a string formula, consider using as.formula(formula).")
+  }
+
   f = as.character(formula)
 
   f[3] = gsub("\n", "", f[3])
 
   y = f[2]
 
-  vars = cleanVars(f[3])
+  vars = clean_vars(f[3])
 
   # performing initial checks ##################################################
-
-  if(!inherits(formula,"formula"))
-  {
-    stop("The formula argument must be of type formula.
-         If using a string formula, consider using as.formula(formula).")
-  }
 
   # check if data is a dataframe
   if(!is.data.frame(data))
@@ -319,15 +319,8 @@ bgwqsr= function(formula, data, quantiles = 5,  n.iter = 10000 / n.chains, n.bur
     message("Consider setting quantiles argument to no larger than deciles (quantiles = 10)")
   }
 
-
-  if(length(vars$categorical)>0) # if there are categorical variables
-  {
-    data = fastDummies::dummy_cols(data, select_columns = vars$categorical,
-                      remove_first_dummy = TRUE, remove_selected_columns = TRUE) # add dummy variables
-  }
-
   # check n.chains > 0
-  if( n.chains <=0)
+  if(n.chains <=0)
   {
     message("The `n.chains` argument should be greater than 0.
             Setting n.chains = 1")
@@ -335,7 +328,7 @@ bgwqsr= function(formula, data, quantiles = 5,  n.iter = 10000 / n.chains, n.bur
   }
 
   # check that n.iter is greater than 100
-  if( n.iter < 100)
+  if(n.iter < 100)
   {
     message("The `n.iter` argument should be greater than 100 -- we suggest >= 1,000
             and ideally 10,000 (in total, n.iter is the number of iterations per mcmc chain).
@@ -344,7 +337,7 @@ bgwqsr= function(formula, data, quantiles = 5,  n.iter = 10000 / n.chains, n.bur
   }
 
   # check that n.burnin is greater than 0
-  if( n.burnin <=0)
+  if(n.burnin <=0)
   {
     message("The `n.burnin` argument should be greater than 0 -- we suggest >= 1,000.
             Resetting to default value of 5,000")
@@ -366,31 +359,51 @@ bgwqsr= function(formula, data, quantiles = 5,  n.iter = 10000 / n.chains, n.bur
     n.adapt = 0
   }
 
+  # check is method is a run.jags method option
+  if(method != "parallel")
+  {
+    runjags_methods = c("rjags", "simple", "interruptible",
+                        "parallel", "rjparallel", "background",
+                        "bgparallel", "snow")
 
+    if(!(method %in% runjags_methods))
+    {
+      message(paste0("The argument `method` should be one of the following options: ", paste(runjags_methods, collapse = ", "),
+                     ". Resetting to default value of 'parallel'.") )
+
+      method = "parallel"
+    }
+  }
 
   ##############################################################################
 
-  data = quantizeVars(data,vars, quantiles) # quantize mixture components
+  if(length(vars$categorical)>0) # if there are categorical variables
+  {
+    data = fastDummies::dummy_cols(data, select_columns = vars$categorical,
+                                   remove_first_dummy = TRUE, remove_selected_columns = TRUE) # add dummy variables
+  }
 
-  model = createJagsModelString(data,y, vars) # create form of Jags model
+  data = quantize_vars(data,vars, quantiles) # quantize mixture components
 
-  modelString = model[[1]]
+  model = create_jags_model_string(data,y, vars) # create form of Jags model
+
+  model_string = model[[1]]
 
   save_params = unlist(c(model$betaNames, model$phis, model$weights))
 
-  suppressWarnings(jags.model <- runjags::run.jags(model = modelString, data = data,
-                        monitor = save_params,
-                        n.chains = n.chains, sample = n.iter, burnin = n.burnin,
-                        adapt = n.adapt, thin = n.thin, method = method,
-                        inits = inits, modules = "glm"))
+  suppressWarnings(jags.model <- runjags::run.jags(model = model_string, data = data,
+                                                   monitor = save_params,
+                                                   n.chains = n.chains, sample = n.iter, burnin = n.burnin,
+                                                   adapt = n.adapt, thin = n.thin, method = method,
+                                                   inits = inits, modules = "glm"))
 
   jags.model = runjags::add.summary(jags.model)
 
-  modelParams = unlist(model[-1])
+  model_params = unlist(model[-1])
 
-  returnlist = list(model = jags.model,vars = vars, params =  modelParams)
+  return_list = list(model = jags.model,vars = vars, params =  model_params)
 
-  return(returnlist)
+  return(return_list)
 }
 
 
@@ -405,8 +418,37 @@ bgwqsr= function(formula, data, quantiles = 5,  n.iter = 10000 / n.chains, n.bur
 #' @return void, prints plots, optionally saves plot in pdf format to filename
 #' @import ggplot2
 #' @export
-plotResults = function(model, filename = NULL, weight_axis_pos = "left", beta_axis_pos = "left")
+plot_results = function(model, filename = NULL, weight_axis_pos = "left", beta_axis_pos = "left")
 {
+
+  # initial checks #############################################################
+
+  # check for bgwqsr object
+  if(!setequal(names(model), c("model", "vars", "params")))
+  {
+    stop("Must pass the object output of the bgwqsr() function.  For example...
+         some_model = bgwqsr(formula, data)
+         plot_results(some_model)")
+  }
+
+  if(!(weight_axis_pos %in% c("left", "right")))
+  {
+    message("The argument `weight_axis_pos` can only be set to `left` or `right`.
+            Resetting to default value of `left`. ")
+
+    weight_axis_pos = "left"
+  }
+
+  if(!(beta_axis_pos %in% c("left", "right")))
+  {
+    message("The argument `beta_axis_pos` can only be set to `left` or `right`.
+            Resetting to default value of `left`. ")
+
+    beta_axis_pos = "left"
+  }
+
+  ##############################################################################
+
   results = model$model$summaries
 
   #Weight Plotting
@@ -457,9 +499,9 @@ plotResults = function(model, filename = NULL, weight_axis_pos = "left", beta_ax
 
   plotWeights = ggplot(data = weightPlot, mapping = aes(x = .data$mean, y = .data$name)) +
     geom_point(mapping = aes(color = .data$group), size = 3) +
-    geom_errorbar(aes(xmin =.data$L2.5, xmax = .data$U97.5), size = .8) + xlab("2.5% quantile, Mean, 97.5% quantile")+
+    geom_errorbar(aes(xmin =.data$L2.5, xmax = .data$U97.5), linewidth = .8) + xlab("2.5% quantile, Mean, 97.5% quantile")+
     ylab("Pollutant Name") + scale_y_discrete(position = weight_axis_pos) +
-    theme(panel.grid.major.y = element_line(colour = "grey50", size = 0.2))
+    theme(panel.grid.major.y = element_line(colour = "grey50", linewidth = 0.2))
 
   #scale_color_manual(values = c("1" = "deepskyblue1", "2" = "red")) +
 
@@ -480,10 +522,10 @@ plotResults = function(model, filename = NULL, weight_axis_pos = "left", beta_ax
     geom_vline(xintercept = 0, linetype = "longdash", colour = "red") +
     geom_point(size = 3, aes(color = .data$significant)) +
     scale_color_manual(values = c("sig" = "red", "insig" = "black")) +
-    geom_errorbar(aes(xmin =.data$L2.5, xmax = .data$U97.5), size = .8) + ylab("Effect Name") +
+    geom_errorbar(aes(xmin =.data$L2.5, xmax = .data$U97.5), linewidth = .8) + ylab("Effect Name") +
     xlab("2.5% quantile, Mean, 97.5% quantile") +
     scale_y_discrete(position = beta_axis_pos) +
-    theme(panel.grid.major.y = element_line(colour = "grey50", size = 0.2))
+    theme(panel.grid.major.y = element_line(colour = "grey50", linewidth = 0.2))
 
   gridExtra::grid.arrange(plotWeights, plotBetas, ncol = 2)
 
@@ -504,8 +546,28 @@ plotResults = function(model, filename = NULL, weight_axis_pos = "left", beta_ax
 #' @return void, prints weight plot, optionally saves plot in pdf format to filename
 #' @import ggplot2
 #' @export
-plotWeights = function(model, filename = NULL, weight_axis_pos = "left")
+plot_weights = function(model, filename = NULL, weight_axis_pos = "left")
 {
+
+  # initial checks #############################################################
+
+  # check for bgwqsr object
+  if(!setequal(names(model), c("model", "vars", "params")))
+  {
+    stop("Must pass the object output of the bgwqsr() function.  For example...
+         some_model = bgwqsr(formula, data)
+         plot_results(some_model)")
+  }
+
+  if(!(weight_axis_pos %in% c("left", "right")))
+  {
+    message("The argument `weight_axis_pos` can only be set to `left` or `right`.
+            Resetting to default value of `left`. ")
+
+    weight_axis_pos = "left"
+  }
+
+  ##############################################################################
   results = model$model$summaries
 
   #Weight Plotting
@@ -556,9 +618,9 @@ plotWeights = function(model, filename = NULL, weight_axis_pos = "left")
 
   plotWeights = ggplot(data = weightPlot, mapping = aes(x = .data$mean, y = .data$name)) +
     geom_point(mapping = aes(color = .data$group), size = 3) +
-    geom_errorbar(aes(xmin =.data$L2.5, xmax = .data$U97.5), size = .8) + xlab("2.5% quantile, Mean, 97.5% quantile")+
+    geom_errorbar(aes(xmin =.data$L2.5, xmax = .data$U97.5), linewidth = .8) + xlab("2.5% quantile, Mean, 97.5% quantile")+
     ylab("Pollutant Name") + scale_y_discrete(position = weight_axis_pos) +
-    theme(panel.grid.major.y = element_line(colour = "grey50", size = 0.2))
+    theme(panel.grid.major.y = element_line(colour = "grey50", linewidth = 0.2))
 
 
   print(plotWeights)
@@ -582,8 +644,29 @@ plotWeights = function(model, filename = NULL, weight_axis_pos = "left")
 #' @import ggplot2
 #' @export
 
-plotBetas = function(model, filename = NULL, beta_axis_pos = "left") # enter just name of file, not with .pdf
+plot_betas = function(model, filename = NULL, beta_axis_pos = "left") # enter just name of file, not with .pdf
 {
+
+  # initial checks #############################################################
+
+  # check for bgwqsr object
+  if(!setequal(names(model), c("model", "vars", "params")))
+  {
+    stop("Must pass the object output of the bgwqsr() function.  For example...
+         some_model = bgwqsr(formula, data)
+         plot_results(some_model)")
+  }
+
+  if(!(beta_axis_pos %in% c("left", "right")))
+  {
+    message("The argument `beta_axis_pos` can only be set to `left` or `right`.
+            Resetting to default value of `left`. ")
+
+    beta_axis_pos = "left"
+  }
+
+  ##############################################################################
+
   results = model$model$summaries
 
 
@@ -602,10 +685,10 @@ plotBetas = function(model, filename = NULL, beta_axis_pos = "left") # enter jus
     geom_vline(xintercept = 0, linetype = "longdash", colour = "red") +
     geom_point(size = 3, aes(color = .data$significant)) +
     scale_color_manual(values = c("sig" = "red", "insig" = "black")) +
-    geom_errorbar(aes(xmin =.data$L2.5, xmax = .data$U97.5), size = .8) + ylab("Effect Name") +
+    geom_errorbar(aes(xmin =.data$L2.5, xmax = .data$U97.5), linewidth = .8) + ylab("Effect Name") +
     xlab("2.5% quantile, Mean, 97.5% quantile") +
     scale_y_discrete(position = beta_axis_pos) +
-    theme(panel.grid.major.y = element_line(colour = "grey50", size = 0.2))
+    theme(panel.grid.major.y = element_line(colour = "grey50", linewidth = 0.2))
 
 
   print(plotBetas)

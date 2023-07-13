@@ -847,11 +847,11 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
   }
 
   # check that cores > 0, if cores > available cores,
-  if(cores <= 0 || cores > availableCores())
+  if(cores <= 0 || cores > future::availableCores())
   {
-    message(paste0("The cores argument must be between 1 and ", availableCores(),
-                  ".  Resetting to the default value which is the result of the availableCores() call, ", availableCores(), "."))
-    cores = availableCores()
+    message(paste0("The cores argument must be between 1 and ", future::availableCores(),
+                  ".  Resetting to the default value which is the result of the availableCores() call, ", future::availableCores(), "."))
+    cores = future::availableCores()
   }
 
   # check arguments in optim control list
@@ -975,18 +975,21 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
                               convergence = fgwqsr_fit$ML_sol$convergence,
                               message = fgwqsr_fit$ML_sol$message)
 
-  return(list(inference_frames = inference_frames,
-              total_time = total_time,
-              n = n,
-              ll = full_ll_val,
-              formula = formula,
-              aic = aic,
-              bic = bic,
-              vars = vars,
-              n_mvn_sims = n_mvn_sims,
-              cores = cores,
-              L_BFGS_B_convergance =L_BFGS_B_convergance,
-              param_cov_mat = cov_mat))
+  return_list = list(inference_frames = inference_frames,
+                     total_time = total_time,
+                     n = n,
+                     ll = full_ll_val,
+                     formula = formula,
+                     aic = aic,
+                     bic = bic,
+                     vars = vars,
+                     n_mvn_sims = n_mvn_sims,
+                     cores = cores,
+                     L_BFGS_B_convergance =L_BFGS_B_convergance,
+                     param_cov_mat = cov_mat)
+  class(return_list) = "fgwqsr"
+
+  return(return_list)
 }
 
 
@@ -995,7 +998,7 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
 #' @param fgwqsr_sol a fitted object from a fgwqsr() call
 #' @param digits the number of rounding digits to display in summary tables.
 #' @export
-fgwqsr_summary = function(fgwqsr_sol, digits  = 6)
+summary.fgwqsr = function(fgwqsr_sol, digits  = 6)
 {
   if(!setequal(names(fgwqsr_sol), c("inference_frames","total_time",
                                    "n","ll", "formula", "aic", "bic",
@@ -1005,7 +1008,7 @@ fgwqsr_summary = function(fgwqsr_sol, digits  = 6)
   {
     stop("Must pass the object output of the fgwqsr() function.  For example...
          some_model = fgwqsr(formula, data)
-         fgwqsr_summary(some_model)")
+         summary(some_model)")
   }
 
   # rounding for mixture index frame

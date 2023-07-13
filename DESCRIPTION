@@ -26,8 +26,9 @@ Imports:
     runjags 
 Suggests: 
     knitr,
-    rmarkdown, 
-    coda
+    rmarkdown,
+    coda,
+    testthat (>= 3.0.0)
 VignetteBuilder: 
     knitr,
     rmarkdown, 
@@ -35,3 +36,4 @@ VignetteBuilder:
     runjags, 
     gridExtra,
     coda
+Config/testthat/edition: 3
