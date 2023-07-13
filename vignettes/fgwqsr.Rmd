@@ -22,7 +22,7 @@ knitr::opts_chunk$set(
 In this vignette, we will showcase how to fit FGWQSR models on cross sectional data with a binary outcome.  FGWQSR estimates parameters to the following model: 
 \begin{align}
 y_i &\sim \text{Bernoulli}(\pi_i) \\ 
-\text{logit}(\pi_i) &= c_0+ \sum\limits_{g = 1}^G \gamma_g \bigg( \sum\limits_{k = 1} ^{c_g} w_{g,k} \cdot q_{g,k,i}\bigg) + \sum_{r = 1}^R \phi_rz_{r,i}  \label{eq:2}
+\text{logit}(\pi_i) &= c_0+ \sum\limits_{g = 1}^G \gamma_g \bigg( \sum\limits_{k = 1} ^{c_g} w_{g,k} \cdot q_{g,k,i}\bigg) + \sum_{r = 1}^R \phi_rz_{r,i} 
 \end{align}
 where 
 

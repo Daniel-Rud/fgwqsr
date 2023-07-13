@@ -8,7 +8,11 @@
 
 # Overview
 
-<br> FGWQSR estimates parameters to the following model: where
+<br> FGWQSR estimates parameters to the following model:
+
+$$y_i \sim \text{Bernoulli}(\pi_i) $$
+$$\text{logit}(\pi_i) = c_0+ \sum\limits_{g = 1}^G \gamma_g \bigg( \sum\limits_{k = 1} ^{c_g} w_{g,k} \cdot q_{g,k,i}\bigg) + \sum_{r = 1}^R \phi_rz_{r,i} $$
+where
 
 - $y_i$ - outcome variable (coded 0 1)
 
@@ -31,7 +35,8 @@
 
 - $z_{r,i}$ - measure of adjusting covariate $r$ for individual $i$
 
-and $$\sum_{k = 1}^{c_g} w_{g,k} =1, \ w_{g,k} \in (0,1)$$.
+subject to the constraints
+$$\sum_{k = 1}^{c_g} w_{g,k} =1, \ w_{g,k} \in (0,1)$$
 
 <br>
 
