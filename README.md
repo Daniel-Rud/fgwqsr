@@ -31,9 +31,7 @@
 
 - $z_{r,i}$ - measure of adjusting covariate $r$ for individual $i$
 
-and
-<img src="https://render.githubusercontent.com/render/math?math=\sum_{k = 1}^{c_g} w_{g,k} =1">,
-$w_{g,k} \in (0,1)$.
+and $\sum_{k = 1}^{c_g} w_{g,k} =1$, $w_{g,k} \in (0,1)$.
 
 <br>
 
