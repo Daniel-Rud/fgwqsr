@@ -31,7 +31,9 @@
 
 - $z_{r,i}$ - measure of adjusting covariate $r$ for individual $i$
 
-and $\sum_{k = 1}^{c_g} w_{g,k} =1$, $w_{g,k} \in (0,1)$.
+and
+<img src="https://render.githubusercontent.com/render/math?math=\sum_{k = 1}^{c_g} w_{g,k} =1">,
+$w_{g,k} \in (0,1)$.
 
 <br>
 
@@ -42,7 +44,7 @@ You can install the development version of fgwqsr from
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("Daniel-Rud/fgwqsr_package")
+devtools::install_github("Daniel-Rud/fgwqsr")
 ```
 
 ``` r
