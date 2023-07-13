@@ -14,6 +14,7 @@ knitr::opts_chunk$set(
 ```
 
 # fgwqsr -- Frequentist Grouped Weighted Quantile Sum Regression
+Fully frequentist model fitting procedure for the weighted quantile sum regression formulation.  Included in this package is an implementation of Bayesian Grouped Weighted Quantile Sum Regression (bgwqsr) introduced by Wheeler, David C et al. that fits mcmc chains in parallel through the runjags package.  
 
 <!-- badges: start -->
 <!-- badges: end -->
@@ -55,7 +56,7 @@ subject to the constraints $$\sum_{k = 1}^{c_g} w_{g,k} =1, \ w_{g,k} \in (0,1)$
 
 
 
-## Installation
+# Installation
 
 You can install the development version of fgwqsr from [GitHub](https://github.com/) with:
 
@@ -67,6 +68,8 @@ devtools::install_github("Daniel-Rud/fgwqsr")
 ```{r example}
 library(fgwqsr)
 ```
+
+In order to use fgwqsr, let us first generate some data
 
 # Data Generation 
 <br>
@@ -218,211 +221,211 @@ The fgwqsr() function has other options too:
 
 * `optim_control_list` - option to supply control options to optim.  
 
-<!-- <br> -->
+<br>
 
-<!-- First, we will focus on fitting models with only chemical mixture variables.  To do this, we will supply the model formula as follows:  -->
+First, we will focus on fitting models with only chemical mixture variables.  To do this, we will supply the model formula as follows:
 
-<!-- ```{r} -->
+```{r}
 
-<!-- mod_formula = y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X12 + X13 + X14 -->
+mod_formula = y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X12 + X13 + X14
 
-<!-- ``` -->
-<!-- <br> -->
+```
+<br>
 
-<!-- Notice that we did not use the "$/$" character since we did not include adjusting covariates.  Now, we can fit the model using the function fgwqsr().   -->
-<!-- ```{r} -->
-<!-- fgwqsr_fit = fgwqsr(formula = mod_formula,  -->
-<!--                     data = data,  -->
-<!--                     quantiles = 5,  -->
-<!--                     n_mvn_sims = 100,  -->
-<!--                     verbose = T) -->
+Notice that we did not use the "$/$" character since we did not include adjusting covariates.  Now, we can fit the model using the function fgwqsr().
+```{r}
+fgwqsr_fit = fgwqsr(formula = mod_formula,
+                    data = data,
+                    quantiles = 5,
+                    n_mvn_sims = 100,
+                    verbose = T)
 
-<!-- ``` -->
-<!-- <br> -->
+```
+<br>
 
-<!-- We can see the model summary using the call summary() -->
+We can see the model summary using the call summary()
 
-<!-- ```{r} -->
+```{r}
 
-<!-- summary(fgwqsr_fit) -->
+summary(fgwqsr_fit)
 
-<!-- ``` -->
-<!-- <br> -->
-<!-- We can compare the true underlying group indices and chemical weights with their estimates, along with if the correct inference is made.  Note that dashes are inserted for the true weights of group 2, since the true underlying group index is null (thus, the weights are unidentifiable).   -->
+```
+<br>
+We can compare the true underlying group indices and chemical weights with their estimates, along with if the correct inference is made.  Note that dashes are inserted for the true weights of group 2, since the true underlying group index is null (thus, the weights are unidentifiable).
 
-<!-- ```{r} -->
-<!-- group_index_frame = data.frame("True Group Index" = exp(gamma),  -->
-<!--                           "Estimated Group Index" = exp(fgwqsr_fit$inference_frames$group_index_frame[,1]) %>% round(3),  -->
-<!--                           "Signficiant?" = ifelse(fgwqsr_fit$inference_frames$group_index_frame[,3] < .05, "Yes", "No"), check.names = F) -->
+```{r}
+group_index_frame = data.frame("True Group Index" = exp(gamma),
+                          "Estimated Group Index" = exp(fgwqsr_fit$inference_frames$group_index_frame[,1]) %>% round(3),
+                          "Signficiant?" = ifelse(fgwqsr_fit$inference_frames$group_index_frame[,3] < .05, "Yes", "No"), check.names = F)
 
-<!-- rownames(group_index_frame) = rownames(fgwqsr_fit$inference_frames$group_index_frame) -->
+rownames(group_index_frame) = rownames(fgwqsr_fit$inference_frames$group_index_frame)
 
-<!-- true_weights = ess$weights %>% unlist %>% round(3) -->
-<!-- true_weights[6:9] = "-" -->
+true_weights = ess$weights %>% unlist %>% round(3)
+true_weights[6:9] = "-"
 
 
-<!-- weight_frame = data.frame("True Weight" = true_weights,  -->
-<!--                           "Estimated Weight" = fgwqsr_fit$inference_frames$weight_frame[,1] %>% round(3),  -->
-<!--                           "Signficiant?" = ifelse(fgwqsr_fit$inference_frames$weight_frame[,3] < .05, "Yes", "No"), check.names = F) -->
+weight_frame = data.frame("True Weight" = true_weights,
+                          "Estimated Weight" = fgwqsr_fit$inference_frames$weight_frame[,1] %>% round(3),
+                          "Signficiant?" = ifelse(fgwqsr_fit$inference_frames$weight_frame[,3] < .05, "Yes", "No"), check.names = F)
 
-<!-- group_index_frame; weight_frame -->
+group_index_frame; weight_frame
 
 
-<!-- ``` -->
-<!-- <br> -->
+```
+<br>
 
 
-<!-- # Fitting with Adjusting Continuous and Categorical Covariates  -->
+# Fitting with Adjusting Continuous and Categorical Covariates
 
-<!-- As mentioned earlier, the "$/$" character in the model formula sent to fgwqsr() indicates that adjusting covariates follow this character.  Continuous characters can be referenced with their columnname from the dataset, while categorical variables need to be referenced using the prefix "i.".  We will illustrate this through an example where we create a continuous $weight$ variable and a categorical $city$ variable.  We will give an effect (in log odds scale) of .5 to weight, .2 to the comparison between city 2 and reference city 1, and -1 to the comparison between city 3 and city 1.    -->
+As mentioned earlier, the "$/$" character in the model formula sent to fgwqsr() indicates that adjusting covariates follow this character.  Continuous characters can be referenced with their columnname from the dataset, while categorical variables need to be referenced using the prefix "i.".  We will illustrate this through an example where we create a continuous $weight$ variable and a categorical $city$ variable.  We will give an effect (in log odds scale) of .5 to weight, .2 to the comparison between city 2 and reference city 1, and -1 to the comparison between city 3 and city 1.
 
-<!-- <br> -->
+<br>
 
-<!-- ```{r} -->
-<!-- set.seed(1) -->
-<!-- # create adjusting covariates  -->
-<!-- weight = rnorm(n = n, mean = 68, sd = 2.5)  -->
-<!-- city = sample(c("city_1", "city_2", "city_3"), size = n, replace = T) -->
+```{r}
+set.seed(1)
+# create adjusting covariates
+weight = rnorm(n = n, mean = 68, sd = 2.5)
+city = sample(c("city_1", "city_2", "city_3"), size = n, replace = T)
 
-<!-- # need to adjust intercept for case control ratio  -->
-<!-- intercept = -3.3 -->
+# need to adjust intercept for case control ratio
+intercept = -3.3
 
-<!-- # create logit(pi) outcome WITH adjusting covariates  -->
-<!-- logit_pi =  gamma[1] * (chem_data[, 1:5] %*% ess$weights$w1) +  -->
-<!--   gamma[2] * (chem_data[, 6:9] %*% ess$weights$w2) +  -->
-<!--   gamma[3] * (chem_data[, 10:14] %*% ess$weights$w3) +  -->
-<!--   .05 *weight +  -->
-<!--   .2*ifelse(city == "city_2", 1, 0) + -1*ifelse(city == "city_3", 1, 0) +  -->
-<!--   intercept -->
+# create logit(pi) outcome WITH adjusting covariates
+logit_pi =  gamma[1] * (chem_data[, 1:5] %*% ess$weights$w1) +
+  gamma[2] * (chem_data[, 6:9] %*% ess$weights$w2) +
+  gamma[3] * (chem_data[, 10:14] %*% ess$weights$w3) +
+  .05 *weight +
+  .2*ifelse(city == "city_2", 1, 0) + -1*ifelse(city == "city_3", 1, 0) +
+  intercept
 
-<!-- # transform to pi  -->
+# transform to pi
 
-<!-- pi = stats::plogis(logit_pi) -->
+pi = stats::plogis(logit_pi)
 
-<!-- # transform to bernoulli outcome  -->
-<!-- y = sapply(pi, FUN = function(p) rbinom(1,1,p)) -->
+# transform to bernoulli outcome
+y = sapply(pi, FUN = function(p) rbinom(1,1,p))
 
-<!-- # create dataset  -->
+# create dataset
 
-<!-- data = data.frame(y = y, chem_data, weight = weight, city = city) -->
+data = data.frame(y = y, chem_data, weight = weight, city = city)
 
-<!-- head(data) -->
-<!-- ``` -->
+head(data)
+```
 
-<!-- <br> -->
-<!-- Now, we specify the formula to include the continuous and categorical variables and call fgwqsr().  -->
-<!-- ```{r} -->
+<br>
+Now, we specify the formula to include the continuous and categorical variables and call fgwqsr().
+```{r}
 
-<!-- mod_formula_adj = y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X12 + X13 + X14 / weight + i.city -->
+mod_formula_adj = y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X12 + X13 + X14 / weight + i.city
 
-<!-- fgwqsr_fit_adj = fgwqsr(formula = mod_formula_adj,  -->
-<!--                     data = data,  -->
-<!--                     quantiles = 5,  -->
-<!--                     n_mvn_sims = 100,  -->
-<!--                     verbose = T) -->
+fgwqsr_fit_adj = fgwqsr(formula = mod_formula_adj,
+                    data = data,
+                    quantiles = 5,
+                    n_mvn_sims = 100,
+                    verbose = T)
 
-<!-- ``` -->
-<!-- <br> -->
-<!-- Again, we use the function summary() to view the results of the fgwqsr() call.   -->
+```
+<br>
+Again, we use the function summary() to view the results of the fgwqsr() call.
 
-<!-- ```{r} -->
+```{r}
 
-<!-- summary(fgwqsr_fit_adj) -->
+summary(fgwqsr_fit_adj)
 
-<!-- ``` -->
-<!-- <br> -->
+```
+<br>
 
-<!-- Finally, we can compare the true parameter value with our estimates from FGWQSR.   -->
+Finally, we can compare the true parameter value with our estimates from FGWQSR.
 
-<!-- ```{r} -->
+```{r}
 
-<!-- group_index_frame = data.frame("True Group Index" = exp(gamma),  -->
-<!--                           "Estimated Group Index" = exp(fgwqsr_fit_adj$inference_frames$group_index_frame$Estimate) %>% round(3),  -->
-<!--                           "Signficiant?" = ifelse(fgwqsr_fit_adj$inference_frames$group_index_frame$`P-value` < .05, "Yes", "No"), check.names = F) -->
+group_index_frame = data.frame("True Group Index" = exp(gamma),
+                          "Estimated Group Index" = exp(fgwqsr_fit_adj$inference_frames$group_index_frame$Estimate) %>% round(3),
+                          "Signficiant?" = ifelse(fgwqsr_fit_adj$inference_frames$group_index_frame$`P-value` < .05, "Yes", "No"), check.names = F)
 
-<!-- rownames(group_index_frame) = rownames(fgwqsr_fit_adj$inference_frames$group_index_frame) -->
+rownames(group_index_frame) = rownames(fgwqsr_fit_adj$inference_frames$group_index_frame)
 
-<!-- true_weights = ess$weights %>% unlist %>% round(3) -->
-<!-- true_weights[6:9] = "-" -->
+true_weights = ess$weights %>% unlist %>% round(3)
+true_weights[6:9] = "-"
 
 
-<!-- weight_frame = data.frame("True Weight" = true_weights,  -->
-<!--                           "Estimated Weight" = fgwqsr_fit_adj$inference_frames$weight_frame$`Weight Estimate` %>% round(3),  -->
-<!--                           "Signficiant?" = ifelse(fgwqsr_fit_adj$inference_frames$weight_frame$`P-value` < .05, "Yes", "No"), check.names = F) -->
+weight_frame = data.frame("True Weight" = true_weights,
+                          "Estimated Weight" = fgwqsr_fit_adj$inference_frames$weight_frame$`Weight Estimate` %>% round(3),
+                          "Signficiant?" = ifelse(fgwqsr_fit_adj$inference_frames$weight_frame$`P-value` < .05, "Yes", "No"), check.names = F)
 
 
-<!-- adj_cov_frame = data.frame("True Covariate Effect" = c(-3.3, .5,.2,-1),  -->
-<!--                            "Estimated Covariate Effect" = fgwqsr_fit_adj$inference_frames$adj_param_frame$Estimate,  -->
-<!--                            "Significant?" = ifelse(fgwqsr_fit_adj$inference_frames$adj_param_frame$`P(Z > |z|)` < .05, "Yes", "No"), check.names = F) -->
+adj_cov_frame = data.frame("True Covariate Effect" = c(-3.3, .5,.2,-1),
+                           "Estimated Covariate Effect" = fgwqsr_fit_adj$inference_frames$adj_param_frame$Estimate,
+                           "Significant?" = ifelse(fgwqsr_fit_adj$inference_frames$adj_param_frame$`P(Z > |z|)` < .05, "Yes", "No"), check.names = F)
 
-<!-- rownames(adj_cov_frame) = rownames(fgwqsr_fit_adj$inference_frames$adj_param_frame) -->
+rownames(adj_cov_frame) = rownames(fgwqsr_fit_adj$inference_frames$adj_param_frame)
 
-<!-- group_index_frame; weight_frame; adj_cov_frame -->
+group_index_frame; weight_frame; adj_cov_frame
 
 
-<!-- ``` -->
+```
 
-<!-- # Fitting Models with BGWQSR  -->
+# Fitting Models with BGWQSR
 
-<!-- We also provide in this package functions to run BGWQSR models using the runjags package.  The bgwqsr() function takes a model formulation similar to that in fgwqsr(), also utilizing the special characters "$|$", "$/$", and "i.".  Fitting the BGWQSR model using runjags allows us to leverage the "parallel" method in runjags that allows us to fit independent mcmc chains on multiple cores, speeding up fitting time.   -->
+We also provide in this package functions to run BGWQSR models using the runjags package.  The bgwqsr() function takes a model formulation similar to that in fgwqsr(), also utilizing the special characters "$|$", "$/$", and "i.".  Fitting the BGWQSR model using runjags allows us to leverage the "parallel" method in runjags that allows us to fit independent mcmc chains on multiple cores, speeding up fitting time.
 
 
-<!-- ```{r} -->
+```{r}
 
-<!-- bgwqsr_fit = bgwqsr(formula = mod_formula_adj,  -->
-<!--                     data = data,  -->
-<!--                     quantiles = 5,  -->
-<!--                     n.iter = 1000, -->
-<!--                     n.burnin = 40,  -->
-<!--                     n.thin = 1, n.chains = 3,  -->
-<!--                     n.adapt = 10,  -->
-<!--                     method = "parallel") -->
+bgwqsr_fit = bgwqsr(formula = mod_formula_adj,
+                    data = data,
+                    quantiles = 5,
+                    n.iter = 1000,
+                    n.burnin = 40,
+                    n.thin = 1, n.chains = 3,
+                    n.adapt = 10,
+                    method = "parallel")
 
-<!-- ``` -->
+```
 
-<!-- <br> -->
+<br>
 
-<!-- To retrieve the summary measures from the MCMC sampling, we can extract the summaries object from the bgwqsr model.    -->
+To retrieve the summary measures from the MCMC sampling, we can extract the summaries object from the bgwqsr model.
 
-<!-- ```{r} -->
-<!-- bgwqsr_fit$model$summaries -->
-<!-- ``` -->
+```{r}
+bgwqsr_fit$model$summaries
+```
 
-<!-- We can analyze the mixing of the markov chains and corresponding autocorrelation plots using functions from the coda package.  We will  -->
-<!-- output only the first few plots. -->
+We can analyze the mixing of the markov chains and corresponding autocorrelation plots using functions from the coda package.  We will
+output only the first few plots.
 
-<!-- ```{r, figure.width = 10, figure.height = 10} -->
-<!-- coda::traceplot(bgwqsr_fit$model$mcmc) # traceplot -->
-<!-- ``` -->
+```{r, figure.width = 10, figure.height = 10}
+coda::traceplot(bgwqsr_fit$model$mcmc) # traceplot
+```
 
-<!-- ```{r, figure.width = 10, figure.height = 10} -->
-<!-- coda::autocorr.plot(bgwqsr_fit$model$mcmc, auto.layout = F, ask = F) # autocorrelation plot  -->
-<!-- ``` -->
+```{r, figure.width = 10, figure.height = 10}
+coda::autocorr.plot(bgwqsr_fit$model$mcmc, auto.layout = F, ask = F) # autocorrelation plot
+```
 
 
-<!-- ```{r, figure.width = 10, figure.height = 10} -->
-<!-- coda::densplot(bgwqsr_fit$model$mcmc) # posterior density plots -->
-<!-- ``` -->
+```{r, figure.width = 10, figure.height = 10}
+coda::densplot(bgwqsr_fit$model$mcmc) # posterior density plots
+```
 
-<!-- ```{r, figure.width = 10, figure.height = 10} -->
-<!-- plot(bgwqsr_fit$model$mcmc, auto.layout = F) # combines traceplot() and densplot() -->
+```{r, figure.width = 10, figure.height = 10}
+plot(bgwqsr_fit$model$mcmc, auto.layout = F) # combines traceplot() and densplot()
 
-<!-- ``` -->
+```
 
 
-<!-- Finally, we can look at plots for the posterior credible intervals for group indices, single chemical weights, and corresponding posterior means.  To do this, we can use the functions plotWeights(), plotBetas(), and plotResult().  plotResults() combines both plots generates by plotWeights and plotBetas into a side by side figure.  Below are code examples for each of the three function calls.   -->
+Finally, we can look at plots for the posterior credible intervals for group indices, single chemical weights, and corresponding posterior means.  To do this, we can use the functions plotWeights(), plotBetas(), and plotResult().  plotResults() combines both plots generates by plotWeights and plotBetas into a side by side figure.  Below are code examples for each of the three function calls.
 
-<!-- ```{r} -->
-<!-- plot_betas(bgwqsr_fit) -->
-<!-- ``` -->
+```{r}
+plot_betas(bgwqsr_fit)
+```
 
-<!-- ```{r} -->
-<!-- plot_weights(bgwqsr_fit) -->
-<!-- ``` -->
+```{r}
+plot_weights(bgwqsr_fit)
+```
 
-<!-- ```{r, fig.width = 12} -->
-<!-- plot_results(bgwqsr_fit) -->
-<!-- ``` -->
+```{r, fig.width = 12}
+plot_results(bgwqsr_fit)
+```
 
 
 
