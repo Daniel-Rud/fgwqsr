@@ -755,7 +755,7 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
 
   # perform initial checks ##################################################
   # check if formula
-  if(!is.formula(formula))
+  if(!inherits(formula,"formula"))
   {
     stop("The formula argument must be of type formula.
          If using a string formula, consider using as.formula(formula).")
@@ -771,12 +771,12 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
   }
 
   # check that outcome variable is a 0 1 numeric variable
-  if(!is.numeric(data[f[3]]))
+  if(!is.numeric(data[f[2]] %>% unlist))
     # check that the vector is numeric
   {
     stop("The outcome variable must be coded as a numeric vector with
          0 denoting controls and 1 denoting cases")
-  }else if(sum(unique(data[f[3]]) %in% c(0,1)) != length(data[f[3]]))
+  }else if(sum(unique(data[f[2]] %>% unlist) %in% c(0,1)) != 2)
     # if the vector is numeric, make sure its elements are only 0s or 1s
   {
     stop("The outcome variable must be coded as a numeric vector with
@@ -786,15 +786,15 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
   # check if the outcome has both cases and controls -- make sure percentage
   # of cases is at least greater than 1%
 
-  if(sum(data[f[3]]) == 0) # if only 0s in outcome vector (controls)
+  if(sum(data[f[2]]) == 0) # if only 0s in outcome vector (controls)
   {
     stop("Outcome variable only contains controls, please check outcome variable coding.")
 
-  } else if (sum(data[f[3]]) == nrow(data))# if only 1s in outcome vector (cases)
+  } else if (sum(data[f[2]]) == nrow(data))# if only 1s in outcome vector (cases)
   {
     stop("Outcome variable only contains cases, please check outcome variable coding.")
 
-  } else if(sum(data[f[3]]) / nrow(data) < .05)
+  } else if(sum(data[f[2]]) / nrow(data) < .05)
   {
     warning("Case control ratio is extremely unproportional.  Less than 5% of observations are cases.  Proceed with caution.")
   }
@@ -815,13 +815,14 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
   {
     message("Quantiles variable should be greater than 1.  Resetting to default value of 5.")
     quantiles = 5
-  }else if(quantiles > 10)
-  {
-    warning("Consider setting quantiles argument to no larger than deciles (quantiles = 10)")
   }else if(quantiles >20)
   {
     message("Quantiles argument should be less than 20.  Resetting to default value of 5.")
     quantiles = 5
+
+  }else if(quantiles > 10)
+  {
+    message("Consider setting quantiles argument to no larger than deciles (quantiles = 10)")
   }
 
   # check if n_mvn_sims >= 100
@@ -996,6 +997,17 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
 #' @export
 fgwqsr_summary = function(fgwqsr_sol, digits  = 6)
 {
+  if(!setequal(names(fgwqsr_sol), c("inference_frames","total_time",
+                                   "n","ll", "formula", "aic", "bic",
+                                   "vars", "n_mvn_sims", "cores",
+                                   "L_BFGS_B_convergance",
+                                   "param_cov_mat")))
+  {
+    stop("Must pass the object output of the fgwqsr() function.  For example...
+         some_model = fgwqsr(formula, data)
+         fgwqsr_summary(some_model)")
+  }
+
   # rounding for mixture index frame
   fgwqsr_sol$inference_frames$group_index_frame[,1:2] =
     round(fgwqsr_sol$inference_frames$group_index_frame[,1:2], digits = digits)

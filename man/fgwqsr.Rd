@@ -12,7 +12,7 @@ fgwqsr(
   zero_threshold_cutoff = 0.5,
   verbose = T,
   cores = future::availableCores(),
-  optim_control_list = list(maxit = 1000, factr = 1e-12, fnscale = 1)
+  optim_control_list = list(maxit = 1000, factr = 0.000000000001, fnscale = 1)
 )
 }
 \arguments{
@@ -36,5 +36,9 @@ fgwqsr(
 list with attributes from fgwqsr model fitting.
 }
 \description{
-Fit a FGWQSR Model
+fgwqsr fits a group signed constrained logistic regression with inference for both group indices and single chemical effects.
+The model formula that we pass to fgwqsr() is different than traditional formulas in lm and glm, as we will need to denote our mixture groups.  Three special characters are used in fgwqsr formulas:
+ * $|$ - denotes the boundary of a mixture group, used to separate chemicals within a mixture group
+ * $/$ - denotes the end of the mixture group specification, adjusting covariates can be added to the formula after this character.  If no adjusting covariates, do not need to specify
+ * i. - precedes categorical variables to denote a categorical variable.  For example, if we have a categorical variable cat_var, we would denote this in the model formula by i.cat_var.  This is similar to the stata syntax to declare categorical variables.
 }

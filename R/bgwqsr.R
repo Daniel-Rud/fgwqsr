@@ -236,7 +236,7 @@ createJagsModelString = function(data,y, vars)
 #' @return list with attributes from fgwqsr model fitting.n
 #' @export
 
-bgwqsr= function(formula, data, quantiles = 5,  n.iter = 1000, n.burnin = 5000,
+bgwqsr= function(formula, data, quantiles = 5,  n.iter = 10000 / n.chains, n.burnin = 5000,
                            n.thin = 1, n.chains=3, n.adapt= 1000, inits = NA, method = "parallel")
 {
   f = as.character(formula)
@@ -247,11 +247,128 @@ bgwqsr= function(formula, data, quantiles = 5,  n.iter = 1000, n.burnin = 5000,
 
   vars = cleanVars(f[3])
 
+  # performing initial checks ##################################################
+
+  if(!inherits(formula,"formula"))
+  {
+    stop("The formula argument must be of type formula.
+         If using a string formula, consider using as.formula(formula).")
+  }
+
+  # check if data is a dataframe
+  if(!is.data.frame(data))
+  {
+    stop("The data argument must be a dataframe object.
+         Please ensure that it is a dataframe, where the
+         columnames of the dataframe correspond to the variable
+         names referenced in the model formula.")
+  }
+
+  # check that outcome variable is a 0 1 numeric variable
+  if(!is.numeric(data[f[2]] %>% unlist))
+    # check that the vector is numeric
+  {
+    stop("The outcome variable must be coded as a numeric vector with
+         0 denoting controls and 1 denoting cases")
+  }else if(sum(unique(data[f[2]] %>% unlist) %in% c(0,1)) != 2)
+    # if the vector is numeric, make sure its elements are only 0s or 1s
+  {
+    stop("The outcome variable must be coded as a numeric vector with
+         0 denoting controls and 1 denoting cases")
+  }
+
+  # check if the outcome has both cases and controls -- make sure percentage
+  # of cases is at least greater than 1%
+
+  if(sum(data[f[2]]) == 0) # if only 0s in outcome vector (controls)
+  {
+    stop("Outcome variable only contains controls, please check outcome variable coding.")
+
+  } else if (sum(data[f[2]]) == nrow(data))# if only 1s in outcome vector (cases)
+  {
+    stop("Outcome variable only contains cases, please check outcome variable coding.")
+
+  } else if(sum(data[f[2]]) / nrow(data) < .05)
+  {
+    warning("Case control ratio is extremely unproportional.  Less than 5% of observations are cases.  Proceed with caution.")
+  }
+
+  # check if variables in formula are in dataframe
+  all_vars = c(vars$mixture %>% unlist, vars$continuous, vars$categorical)
+
+  if( sum(all_vars %in% colnames(data)) != length(all_vars))
+  {
+    missing_vars = all_vars[which(!(all_vars %in% colnames(data)))]
+    stop(paste0("The following variable names included in the model formula are not included
+         as columnames in the passed `data` argument: ", paste(all_vars, collapse = ", "), "."))
+  }
+
+  # check if quantiles variable is within reasonable range
+
+  if(quantiles <= 1)
+  {
+    message("Quantiles variable should be greater than 1.  Resetting to default value of 5.")
+    quantiles = 5
+  }else if(quantiles >20)
+  {
+    message("Quantiles argument should be less than 20.  Resetting to default value of 5.")
+    quantiles = 5
+
+  }else if(quantiles > 10)
+  {
+    message("Consider setting quantiles argument to no larger than deciles (quantiles = 10)")
+  }
+
+
   if(length(vars$categorical)>0) # if there are categorical variables
   {
     data = fastDummies::dummy_cols(data, select_columns = vars$categorical,
                       remove_first_dummy = TRUE, remove_selected_columns = TRUE) # add dummy variables
   }
+
+  # check n.chains > 0
+  if( n.chains <=0)
+  {
+    message("The `n.chains` argument should be greater than 0.
+            Setting n.chains = 1")
+    n.chains = 1
+  }
+
+  # check that n.iter is greater than 100
+  if( n.iter < 100)
+  {
+    message("The `n.iter` argument should be greater than 100 -- we suggest >= 1,000
+            and ideally 10,000 (in total, n.iter is the number of iterations per mcmc chain).
+            Resetting to default value of 10,000 / n.chain")
+    n.iter = 10000 / n.chains
+  }
+
+  # check that n.burnin is greater than 0
+  if( n.burnin <=0)
+  {
+    message("The `n.burnin` argument should be greater than 0 -- we suggest >= 1,000.
+            Resetting to default value of 5,000")
+    n.burnin = 5000
+  }
+
+  # check that n.thin > 0
+  if( n.thin <=0)
+  {
+    message("The `n.thin` argument should be greater than 0.
+            Resetting to default value of 1")
+    n.thin = 1
+  }
+
+  if(n.adapt < 0)
+  {
+    message("The `n.adapt` argument should be greater than or equal to 0.
+            Setting value to 0.  ")
+    n.adapt = 0
+  }
+
+
+
+  ##############################################################################
 
   data = quantizeVars(data,vars, quantiles) # quantize mixture components
 
