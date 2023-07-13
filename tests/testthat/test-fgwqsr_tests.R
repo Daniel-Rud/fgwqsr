@@ -91,7 +91,7 @@ testthat::test_that("Expectation: fgwqsr succeeds in fitting and summary works",
     testthat::expect_type(fgwqsr_fit_adj , "list")
   )
 
-  testthat::expect_no_error(fgwqsr_summary(fgwqsr_fit_adj))
+  testthat::expect_no_error(summary(fgwqsr_fit_adj))
 
 })
 

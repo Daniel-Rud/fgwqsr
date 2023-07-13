@@ -995,12 +995,12 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
 
 
 #' Summarize a fgwqsr model fit
-#' @param fgwqsr_sol a fitted object from a fgwqsr() call
+#' @param object a fitted object from a fgwqsr() call
 #' @param digits the number of rounding digits to display in summary tables.
 #' @export
-summary.fgwqsr = function(fgwqsr_sol, digits  = 6)
+summary.fgwqsr = function(object, digits  = 6)
 {
-  if(!setequal(names(fgwqsr_sol), c("inference_frames","total_time",
+  if(!setequal(names(object), c("inference_frames","total_time",
                                    "n","ll", "formula", "aic", "bic",
                                    "vars", "n_mvn_sims", "cores",
                                    "L_BFGS_B_convergance",
@@ -1012,68 +1012,68 @@ summary.fgwqsr = function(fgwqsr_sol, digits  = 6)
   }
 
   # rounding for mixture index frame
-  fgwqsr_sol$inference_frames$group_index_frame[,1:2] =
-    round(fgwqsr_sol$inference_frames$group_index_frame[,1:2], digits = digits)
+  object$inference_frames$group_index_frame[,1:2] =
+    round(object$inference_frames$group_index_frame[,1:2], digits = digits)
 
   # fix pvalues
-  fgwqsr_sol$inference_frames$group_index_frame[,3] =
-    sapply(fgwqsr_sol$inference_frames$group_index_frame[,3],
+  object$inference_frames$group_index_frame[,3] =
+    sapply(object$inference_frames$group_index_frame[,3],
            FUN = format_scientific, cutoff = 10^(-digits))
 
   # rounding for weight frame
 
-  fgwqsr_sol$inference_frames$weight_frame[,1:2] =
-    round(fgwqsr_sol$inference_frames$weight_frame[,1:2], digits = digits)
+  object$inference_frames$weight_frame[,1:2] =
+    round(object$inference_frames$weight_frame[,1:2], digits = digits)
 
   # fix pvalues
-  fgwqsr_sol$inference_frames$weight_frame[,3] =
-    sapply(fgwqsr_sol$inference_frames$weight_frame[,3],
+  object$inference_frames$weight_frame[,3] =
+    sapply(object$inference_frames$weight_frame[,3],
            FUN = format_scientific, cutoff = 10^(-digits))
 
   # fix adjusting covariates
 
-  fgwqsr_sol$inference_frames$adj_param_frame[,1:3] =
-    round(fgwqsr_sol$inference_frames$adj_param_frame[,1:3], digits = digits)
+  object$inference_frames$adj_param_frame[,1:3] =
+    round(object$inference_frames$adj_param_frame[,1:3], digits = digits)
 
   # fix pvalues
-  fgwqsr_sol$inference_frames$adj_param_frame[,4] =
-    sapply(fgwqsr_sol$inference_frames$adj_param_frame[,4],
+  object$inference_frames$adj_param_frame[,4] =
+    sapply(object$inference_frames$adj_param_frame[,4],
            FUN = format_scientific, cutoff = 10^(-digits))
 
   # make confidence interval rounded for adjusting covariates
-  fgwqsr_sol$inference_frames$adj_param_frame[, 5:6] =
-    round(fgwqsr_sol$inference_frames$adj_param_frame[, 5:6], digits = digits)
+  object$inference_frames$adj_param_frame[, 5:6] =
+    round(object$inference_frames$adj_param_frame[, 5:6], digits = digits)
 
-  ci_95 = paste("(",fgwqsr_sol$inference_frames$adj_param_frame[, 5], ", ",
-                fgwqsr_sol$inference_frames$adj_param_frame[, 6], ")", sep = "")
+  ci_95 = paste("(",object$inference_frames$adj_param_frame[, 5], ", ",
+                object$inference_frames$adj_param_frame[, 6], ")", sep = "")
 
-  fgwqsr_sol$inference_frames$adj_param_frame[,5] = ci_95
-  colnames(fgwqsr_sol$inference_frames$adj_param_frame)[5] = "95% CI"
-  fgwqsr_sol$inference_frames$adj_param_frame =
-    subset(fgwqsr_sol$inference_frames$adj_param_frame, select = -6) # remove column with upper 95% endpoint
+  object$inference_frames$adj_param_frame[,5] = ci_95
+  colnames(object$inference_frames$adj_param_frame)[5] = "95% CI"
+  object$inference_frames$adj_param_frame =
+    subset(object$inference_frames$adj_param_frame, select = -6) # remove column with upper 95% endpoint
 
-  cat("\nCall: \nFGWQSR with formula '",gsub("  ", "",paste(format(fgwqsr_sol$formula), collapse = "")),"' on n = ",fgwqsr_sol$n," observations.", sep = "" )
-  cat("\n\n", fgwqsr_sol$n_mvn_sims, " samples used for simulated LRT distirbution.",sep = "")
-  cat("\n\nLog Likelihood:", fgwqsr_sol$ll, "| AIC:",fgwqsr_sol$aic, "| BIC:", fgwqsr_sol$bic)
+  cat("\nCall: \nFGWQSR with formula '",gsub("  ", "",paste(format(object$formula), collapse = "")),"' on n = ",object$n," observations.", sep = "" )
+  cat("\n\n", object$n_mvn_sims, " samples used for simulated LRT distirbution.",sep = "")
+  cat("\n\nLog Likelihood:", object$ll, "| AIC:",object$aic, "| BIC:", object$bic)
   cat("\n\nEstimates and Inference for Group Index Effects\n", sep = "")
-  print(fgwqsr_sol$inference_frames$group_index_frame, digits = digits)
+  print(object$inference_frames$group_index_frame, digits = digits)
   cat("\nEstimates and Inference for Weights\n")
 
   current_index = 1
-  for(i in 1: length(fgwqsr_sol$vars$mixture))
+  for(i in 1: length(object$vars$mixture))
   {
-    group_size = fgwqsr_sol$vars$mixture[[i]] %>% length
-    output = fgwqsr_sol$inference_frames$weight_frame[current_index: (current_index + group_size - 1), ]
+    group_size = object$vars$mixture[[i]] %>% length
+    output = object$inference_frames$weight_frame[current_index: (current_index + group_size - 1), ]
     print(output, digits = digits)
     current_index = current_index + group_size
     cat("-------------------------------------------------\n")
   }
   cat("\nEstimates and Inference for Intercept and Adjusting Covariates\n")
-  print(fgwqsr_sol$inference_frames$adj_param_frame)
+  print(object$inference_frames$adj_param_frame)
   cat("\nSignificance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' \n")
   cat("\nTotal runtime for FGWQSR: ",
-      ifelse(fgwqsr_sol$total_time < 60,paste(round(fgwqsr_sol$total_time,2), "seconds"),
-             paste(round(fgwqsr_sol$total_time/60, 2), "minutes")), "on",fgwqsr_sol$cores, "cores." )
+      ifelse(object$total_time < 60,paste(round(object$total_time,2), "seconds"),
+             paste(round(object$total_time/60, 2), "minutes")), "on",object$cores, "cores." )
 }
 
 
