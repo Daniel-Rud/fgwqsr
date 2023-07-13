@@ -53,9 +53,11 @@ library(fgwqsr)
 
 <br> To begin, let us generate some data to use. We will have 14
 underlying chemical exposure variables, with mixture groups of sizes
-(5,4,5) and weight distribution  
-\* $\mathbf{w}_1 = (1/3,1/3,1/3,0,0)$ \*
-$\mathbf{w}_2 = (1/2,1/2, 0, 0)$ \* $\mathbf{w}_3 = (1/3,1/3,1/3,0,0)$.
+(5,4,5) and weight distribution
+
+- $\mathbf{w}_1 = (1/3,1/3,1/3,0,0)$
+- $\mathbf{w}_2 = (1/2,1/2, 0, 0)$
+- $\mathbf{w}_3 = (1/3,1/3,1/3,0,0)$.
 
 We will use a fixed correlation structure such that the correlation of
 chemicals within a group is .7 and the cross correlations between 2
