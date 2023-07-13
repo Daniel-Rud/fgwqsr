@@ -240,26 +240,26 @@ formulas: <br>
 
 <br> The fgwqsr() function has other options too: <br>
 
-- data - should be a data frame object containing variable columnames
+- `data` - should be a data frame object containing variable columnames
   referenced in model formula (cat vars do not need to be named with i.
   in columnames)
 
-- quantiles - number of quantiles to quantize the exposure variables in
-  the mixture portion of the model
+- `quantiles` - number of quantiles to quantize the exposure variables
+  in the mixture portion of the model
 
-- n_mvn_sims - defines resolution for simulated null distribution for
+- `n_mvn_sims` - defines resolution for simulated null distribution for
   group index and single chemical LRTs. Default is 10,000.
 
-- zero_threshold_cutoff - defines a .
+- `zero_threshold_cutoff` - defines a .
 
-- verbose - Displays messages and progress bar while fitting FGWQSR
+- `verbose` - Displays messages and progress bar while fitting FGWQSR
   model. Default is TRUE.
 
-- cores - number of cores to parallelize on for fitting nested models
+- `cores` - number of cores to parallelize on for fitting nested models
   and simulated null LRT distributions. Default is number of available
   cores on user device.
 
-- optim_control_list - option to supply control options to optim.
+- `optim_control_list` - option to supply control options to optim.
 
 <!-- <br> -->
 <!-- First, we will focus on fitting models with only chemical mixture variables.  To do this, we will supply the model formula as follows:  -->
