@@ -6,8 +6,8 @@
 Fully frequentist model fitting procedure for the weighted quantile sum
 regression formulation. Included in this package is an implementation of
 Bayesian Grouped Weighted Quantile Sum Regression (bgwqsr) introduced by
-Wheeler, David C et al. that fits mcmc chains in parallel through the
-runjags package.
+Wheeler, David C et al. that fits Markov Chain Monte Carlo (MCMC) chains
+in parallel through the runjags package.
 
 <!-- badges: start -->
 <!-- badges: end -->
@@ -241,7 +241,7 @@ be different than traditional formulas in lm and glm, as we will need to
 denote our mixture groups. Three special characters are used in fgwqsr
 formulas: <br>
 
-- `|` denotes the boundary of a mixture group, used to seperate
+- `|` - denotes the boundary of a mixture group, used to seperate
   chemicals within a mixture group.
 
 - `/` - denotes the end of the mixture group specification, adjusting
@@ -255,17 +255,17 @@ formulas: <br>
 
 <br> The fgwqsr() function has other options too: <br>
 
-- `data` - should be a data frame object containing variable columnames
-  referenced in model formula (cat vars do not need to be named with i.
-  in columnames)
+- `data` - a data frame object containing variable columnames referenced
+  in model formula (cat vars do not need to be named with i. in
+  columnames).
 
 - `quantiles` - number of quantiles to quantize the exposure variables
-  in the mixture portion of the model
+  in the mixture portion of the model.
 
 - `n_mvn_sims` - defines resolution for simulated null distribution for
   group index and single chemical LRTs. Default is 10,000.
 
-- `zero_threshold_cutoff` - defines a .
+- `zero_threshold_cutoff` -
 
 - `verbose` - Displays messages and progress bar while fitting FGWQSR
   model. Default is TRUE.
@@ -353,7 +353,7 @@ summary(fgwqsr_fit)
 #> 
 #> Significance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' 
 #> 
-#> Total runtime for FGWQSR:  1.2 minutes on 10 cores.
+#> Total runtime for FGWQSR:  1.24 minutes on 10 cores.
 ```
 
 <br> We can compare the true underlying group indices and chemical
@@ -522,7 +522,7 @@ summary(fgwqsr_fit_adj)
 #> 
 #> Significance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' 
 #> 
-#> Total runtime for FGWQSR:  1.15 minutes on 10 cores.
+#> Total runtime for FGWQSR:  1.2 minutes on 10 cores.
 ```
 
 <br>
@@ -602,7 +602,7 @@ bgwqsr_fit = bgwqsr(formula = mod_formula_adj,
 #> Calling 3 simulations using the parallel method...
 #> Following the progress of chain 1 (the program will wait for all chains
 #> to finish before continuing):
-#> Welcome to JAGS 4.3.2 (official binary) on Thu Jul 13 16:53:43 2023
+#> Welcome to JAGS 4.3.2 (official binary) on Thu Jul 13 17:11:25 2023
 #> JAGS is free software and comes with ABSOLUTELY NO WARRANTY
 #> Loading module: basemod: ok
 #> Loading module: bugs: ok
@@ -642,50 +642,50 @@ the summaries object from the bgwqsr model.
 
 ``` r
 bgwqsr_fit$model$summaries
-#>                      Lower95      Median    Upper95        Mean          SD
-#> B0              -3.651920000 -2.27815500 -1.0700100 -2.28266497 0.660029173
-#> B1              -0.771817000 -0.72599650 -0.6790350 -0.72587763 0.023888107
-#> B2               0.027681000  0.06506000  0.1070880  0.06531566 0.020266320
-#> B3               0.363868000  0.40557950  0.4487600  0.40568180 0.021959541
-#> phi_weight       0.017702300  0.03438805  0.0553166  0.03456578 0.009658224
-#> phi_city_city_2  0.000252172  0.18119350  0.2865510  0.17389172 0.073724241
-#> phi_city_city_3 -1.182230000 -1.04730500 -0.9247720 -1.04811690 0.065321807
-#> w1[1]            0.301526000  0.35394100  0.4043110  0.35447934 0.025110695
-#> w1[2]            0.228792000  0.27677100  0.3239400  0.27663721 0.024087736
-#> w1[3]            0.272610000  0.32303200  0.3656150  0.32342540 0.024922922
-#> w1[4]            0.002924070  0.02513750  0.0519143  0.02520196 0.014890445
-#> w1[5]            0.003806210  0.01846310  0.0394350  0.02025609 0.011317820
-#> w2[1]            0.005183060  0.14507250  0.5597240  0.19835967 0.169179303
-#> w2[2]            0.201965000  0.58669200  0.9251560  0.57358199 0.204893546
-#> w2[3]            0.000759610  0.06642060  0.3984120  0.12355657 0.137690018
-#> w2[4]            0.001652330  0.05036820  0.3730860  0.10450176 0.125653074
-#> w3[1]            0.213352000  0.30505950  0.3988060  0.30532584 0.047157307
-#> w3[2]            0.229635000  0.31602700  0.4019810  0.31611886 0.044047605
-#> w3[3]            0.247347000  0.33971300  0.4217930  0.33934420 0.044837968
-#> w3[4]            0.000582802  0.01748110  0.0554424  0.02049139 0.018384662
-#> w3[5]            0.000380900  0.00970993  0.0686573  0.01871971 0.021925203
+#>                      Lower95       Median    Upper95        Mean          SD
+#> B0              -3.73813e+00 -2.422045000 -1.2014100 -2.41838766 0.651339107
+#> B1              -7.71474e-01 -0.723258000 -0.6771130 -0.72320303 0.023809228
+#> B2               2.86077e-02  0.065230500  0.1037350  0.06564681 0.019113923
+#> B3               3.63014e-01  0.405274000  0.4475340  0.40559132 0.022001132
+#> phi_weight       1.87587e-02  0.036603450  0.0555634  0.03642075 0.009507771
+#> phi_city_city_2  2.32839e-02  0.187623000  0.2932740  0.18180605 0.066655610
+#> phi_city_city_3 -1.16509e+00 -1.043510000 -0.9143390 -1.04413914 0.062455356
+#> w1[1]            3.08170e-01  0.357556500  0.4029260  0.35743430 0.024930865
+#> w1[2]            2.30542e-01  0.278507000  0.3263740  0.27840804 0.024849547
+#> w1[3]            2.79774e-01  0.330452000  0.3840250  0.32981550 0.026873645
+#> w1[4]            1.10851e-03  0.010094800  0.0544492  0.02000499 0.018359339
+#> w1[5]            3.92014e-04  0.010567150  0.0391001  0.01433715 0.013528282
+#> w2[1]            1.47412e-05  0.046993300  0.3440540  0.10021179 0.122003422
+#> w2[2]            2.17828e-01  0.638743000  0.9427130  0.61494700 0.208571602
+#> w2[3]            1.58265e-03  0.139743500  0.5456730  0.19227517 0.175801578
+#> w2[4]            4.34477e-05  0.035248500  0.3850320  0.09256606 0.132189486
+#> w3[1]            2.23929e-01  0.308875000  0.3951600  0.31020465 0.044592502
+#> w3[2]            2.26804e-01  0.317380000  0.3933540  0.31754417 0.043480238
+#> w3[3]            2.56372e-01  0.339486000  0.4284780  0.33925721 0.044184834
+#> w3[4]            4.02593e-04  0.007660025  0.0455846  0.01288079 0.014874080
+#> w3[5]            4.73900e-04  0.012307600  0.0692136  0.02011316 0.021329853
 #>                 Mode        MCerr MC%ofSD SSeff        AC.10     psrf
-#> B0                NA 0.0391454326     5.9   284  0.165187016 1.012575
-#> B1                NA 0.0006818782     2.9  1227  0.002752647 1.002315
-#> B2                NA 0.0005166076     2.5  1539  0.031775029 1.001713
-#> B3                NA 0.0005955145     2.7  1360 -0.007846648 1.007213
-#> phi_weight        NA 0.0005773885     6.0   280  0.166251889 1.009272
-#> phi_city_city_2   NA 0.0034667307     4.7   452  0.276555205 1.111936
-#> phi_city_city_3   NA 0.0023102811     3.5   799  0.087299442 1.030917
-#> w1[1]             NA 0.0012737224     5.1   389  0.112090940 1.011909
-#> w1[2]             NA 0.0013039205     5.4   341  0.122131798 1.014405
-#> w1[3]             NA 0.0013552112     5.4   338  0.085278262 1.026837
-#> w1[4]             NA 0.0024195588    16.2    38  0.774753459 1.200346
-#> w1[5]             NA 0.0016464006    14.5    47  0.735827443 1.186657
-#> w2[1]             NA 0.0260361292    15.4    42  0.767105172 1.175408
-#> w2[2]             NA 0.0264447075    12.9    60  0.676737610 1.610980
-#> w2[3]             NA 0.0250080142    18.2    30  0.807414212 1.115628
-#> w2[4]             NA 0.0195048118    15.5    42  0.764419086 1.436253
-#> w3[1]             NA 0.0031495200     6.7   224  0.230762019 1.025377
-#> w3[2]             NA 0.0028722974     6.5   235  0.249815408 1.007689
-#> w3[3]             NA 0.0026811067     6.0   280  0.133559098 1.048325
-#> w3[4]             NA 0.0035710523    19.4    27  0.817929266 1.200438
-#> w3[5]             NA 0.0041788292    19.1    28  0.826218678 1.494243
+#> B0                NA 0.0183796061     2.8  1256  0.044878025 1.005302
+#> B1                NA 0.0006656478     2.8  1279  0.037675164 1.011327
+#> B2                NA 0.0005130853     2.7  1388  0.049920670 1.017636
+#> B3                NA 0.0005842558     2.7  1418 -0.005588416 1.000201
+#> phi_weight        NA 0.0002641222     2.8  1296  0.046339405 1.004811
+#> phi_city_city_2   NA 0.0030424113     4.6   480  0.224552874 1.054999
+#> phi_city_city_3   NA 0.0019124037     3.1  1067  0.071088001 1.016369
+#> w1[1]             NA 0.0012089420     4.8   425  0.119036383 1.047435
+#> w1[2]             NA 0.0013897399     5.6   320  0.146277089 1.047589
+#> w1[3]             NA 0.0014138364     5.3   361  0.130424813 1.023017
+#> w1[4]             NA 0.0029208987    15.9    40  0.795859405 2.310519
+#> w1[5]             NA 0.0026403211    19.5    26  0.824341966 1.173404
+#> w2[1]             NA 0.0231257442    19.0    28  0.815090991 2.202215
+#> w2[2]             NA 0.0335850282    16.1    39  0.778665861 1.087210
+#> w2[3]             NA 0.0336606099    19.1    27  0.818677498 1.309979
+#> w2[4]             NA 0.0258871956    19.6    26  0.832980529 1.204676
+#> w3[1]             NA 0.0029408779     6.6   230  0.182421732 1.007067
+#> w3[2]             NA 0.0027596980     6.3   248  0.206511651 1.005386
+#> w3[3]             NA 0.0027855505     6.3   252  0.191805174 1.032560
+#> w3[4]             NA 0.0024682431    16.6    36  0.766060777 1.770899
+#> w3[5]             NA 0.0046955221    22.0    21  0.849816752 1.317667
 ```
 
 We can analyze the mixing of the markov chains and corresponding
@@ -700,8 +700,7 @@ coda::traceplot(bgwqsr_fit$model$mcmc) # traceplot
 <img src="man/figures/README-unnamed-chunk-18-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-18-3.png" width="100%" />
 
 ``` r
-par(mfrow = c(3,3))
-coda::autocorr.plot(bgwqsr_fit$model$mcmc, auto.layout = F, ask = F) # autocorrelation plot
+coda::autocorr.plot(bgwqsr_fit$model$mcmc, ask = F) # autocorrelation plot
 ```
 
 <img src="man/figures/README-unnamed-chunk-19-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-3.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-4.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-5.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-6.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-7.png" width="100%" />
@@ -714,18 +713,17 @@ coda::densplot(bgwqsr_fit$model$mcmc) # posterior density plots
 <img src="man/figures/README-unnamed-chunk-20-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-3.png" width="100%" />
 
 ``` r
-par(mfrow = c(3,3))
-plot(bgwqsr_fit$model$mcmc, auto.layout = F) # combines traceplot() and densplot()
+plot(bgwqsr_fit$model$mcmc) # combines traceplot() and densplot()
 ```
 
-<img src="man/figures/README-unnamed-chunk-21-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-3.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-4.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-5.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-21-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-3.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-4.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-5.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-6.png" width="100%" />
 
 Finally, we can look at plots for the posterior credible intervals for
 group indices, single chemical weights, and corresponding posterior
-means. To do this, we can use the functions plotWeights(), plotBetas(),
-and plotResult(). plotResults() combines both plots generates by
-plotWeights and plotBetas into a side by side figure. Below are code
-examples for each of the three function calls.
+means. To do this, we can use the functions plot_weights(),
+plot_betas(), and plot_result(). plot_results() combines both plots
+generates by plot_weights and plot_betas into a side by side figure.
+Below are code examples for each of the three function calls.
 
 ``` r
 plot_betas(bgwqsr_fit)

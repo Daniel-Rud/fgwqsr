@@ -223,17 +223,18 @@ create_jags_model_string = function(data,y, vars)
 #' Fit a Bayesian Grouped Weighted Quantile Sum Regression Model
 #' @description
 #' Fits a BGWQSR using the runjags package in parallel over multiple cores
-#' @param formula  A formula for model fitting of BGWQSR.  Please see description for formula construction
-#' @param data dataframe that contains all covariates and the outcome data.  Column names of dataframe should match those referenced int he model formula.
-#' @param quantiles number of quantiles to quantize the exposure variables in the mixture portion of the model.  Default value is 5.
-#' @param n.iter number of mcmc iterations after burnin and adapt iterations PER mcmc chain.
-#' @param n.burnin number of mcmc burnin samples PER mcmc chain
-#' @param n.thin thinning interval for mcmc samples PER mcmc chain
-#' @param n.chains number of separate independent mcmc chains to use.
-#' @param n.adapt number of mcmc samples to perform mcmc adaption PER mcmc chain.
-#' @param inits initial values to provide for prior distributions.
-#' @param method method for which
-#' @return list with attributes from fgwqsr model fitting.n
+#' @param `formula`  A formula for model fitting of BGWQSR.  Please see description for formula construction
+#' @param `data` dataframe that contains all covariates and the outcome data.  Column names of dataframe should match those referenced int he model formula.
+#' @param `quantiles` number of quantiles to quantize the exposure variables in the mixture portion of the model.  Default value is 5.
+#' @param `n.iter` number of mcmc iterations after burnin and adapt iterations PER mcmc chain.
+#' @param `n.burnin` number of mcmc burnin samples PER mcmc chain
+#' @param `n.thin` thinning interval for mcmc samples PER mcmc chain
+#' @param `n.chains` number of separate independent mcmc chains to use.
+#' @param `n.adapt` number of mcmc samples to perform mcmc adaption PER mcmc chain.
+#' @param `inits` initial values to provide for prior distributions.
+#' @param `method` method for mcmc fitting, a passed argument to run.jags function.  Can be one of: `rjags`, `simple`, `interruptible`,
+#' `parallel`, `rjparallel`, `background`, `bgparallel`, or `snow`.
+#' @return list with attributes from fgwqsr model fitting.
 #' @export
 
 bgwqsr= function(formula, data, quantiles = 5,  n.iter = 10000 / n.chains, n.burnin = 5000,

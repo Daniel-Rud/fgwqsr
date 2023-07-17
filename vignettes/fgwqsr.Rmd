@@ -400,7 +400,7 @@ plot(bgwqsr_fit$model$mcmc, auto.layout = F) # combines traceplot() and densplot
 ```
 
 
-Finally, we can look at plots for the posterior credible intervals for group indices, single chemical weights, and corresponding posterior means.  To do this, we can use the functions plotWeights(), plotBetas(), and plotResult().  plotResults() combines both plots generates by plotWeights and plotBetas into a side by side figure.  Below are code examples for each of the three function calls.  
+Finally, we can look at plots for the posterior credible intervals for group indices, single chemical weights, and corresponding posterior means.  To do this, we can use the functions plot_weights(), plot_betas(), and plot_result().  plot_results() combines both plots generates by plot_weights and plot_betas into a side by side figure.  Below are code examples for each of the three function calls. 
 
 ```{r}
 plot_betas(bgwqsr_fit)
