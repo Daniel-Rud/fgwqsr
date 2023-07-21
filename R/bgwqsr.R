@@ -223,18 +223,27 @@ create_jags_model_string = function(data,y, vars)
 #' Fit a Bayesian Grouped Weighted Quantile Sum Regression Model
 #' @description
 #' Fits a BGWQSR using the runjags package in parallel over multiple cores
-#' @param `formula`  A formula for model fitting of BGWQSR.  Please see description for formula construction
-#' @param `data` dataframe that contains all covariates and the outcome data.  Column names of dataframe should match those referenced int he model formula.
-#' @param `quantiles` number of quantiles to quantize the exposure variables in the mixture portion of the model.  Default value is 5.
-#' @param `n.iter` number of mcmc iterations after burnin and adapt iterations PER mcmc chain.
-#' @param `n.burnin` number of mcmc burnin samples PER mcmc chain
-#' @param `n.thin` thinning interval for mcmc samples PER mcmc chain
-#' @param `n.chains` number of separate independent mcmc chains to use.
-#' @param `n.adapt` number of mcmc samples to perform mcmc adaption PER mcmc chain.
-#' @param `inits` initial values to provide for prior distributions.
-#' @param `method` method for mcmc fitting, a passed argument to run.jags function.  Can be one of: `rjags`, `simple`, `interruptible`,
-#' `parallel`, `rjparallel`, `background`, `bgparallel`, or `snow`.
-#' @return list with attributes from fgwqsr model fitting.
+#' @param formula  A formula for model fitting of BGWQSR.  Please see description for
+#' formula construction
+#' @param data dataframe that contains all covariates and the outcome data.
+#' Column names of dataframe should match those referenced int he model formula.
+#' @param quantiles number of quantiles to quantize the exposure variables in the
+#' mixture portion of the model.  Default value is 5.
+#' @param n.iter number of mcmc iterations after burnin and adapt iterations
+#' PER mcmc chain.
+#' @param n.burnin number of mcmc burnin samples PER mcmc chain
+#' @param n.thin thinning interval for mcmc samples PER mcmc chain
+#' @param n.chains number of separate independent mcmc chains to use.
+#' @param n.adapt number of mcmc samples to perform mcmc adaption PER mcmc chain.
+#' @param inits initial values to provide for prior distributions.
+#' @param method method for mcmc fitting, a passed argument to run.jags function.
+#' Can be one of: rjags, simple, interruptible,
+#' parallel, rjparallel, background, bgparallel, or snow.
+#' @return list with attributes from bgwqsr model fitting.
+#' Object from \code{run.jags} function call
+#' @details
+#' For additional instructions in using the \code{bgwqsr()} function,
+#' please visit \url{https://github.com/Daniel-Rud/fgwqsr/blob/main/README.md}
 #' @export
 
 bgwqsr= function(formula, data, quantiles = 5,  n.iter = 10000 / n.chains, n.burnin = 5000,
@@ -410,8 +419,8 @@ bgwqsr= function(formula, data, quantiles = 5,  n.iter = 10000 / n.chains, n.bur
 
 #' Plot Results of Beta and Weight Estimates
 #' @description
-#' A short description...
-#'
+#' Group index and weight plots for posterior estimates from BGWQSR with corresponding
+#' 95% credible intervals
 #' @param model a BGWQSR model object fit from bgwqsr_parallel
 #' @param filename optional file path to save results of plot in a pdf format
 #' @param weight_axis_pos choice to put legend for weight plots on the left or right side of plot.  Options are "left" or "right".  Default is "left"
@@ -637,7 +646,7 @@ plot_weights = function(model, filename = NULL, weight_axis_pos = "left")
 
 #' Plot Results of Betas
 #' @description
-#' Plots the posterior 95% credible interval for group index posteriors from BGWQSR, as well as posterior mean.
+#' #' Plots the 95% credible intervals for each group index effect, along with posterior mean group index estimates, from the BGWQSR posterior distributions.
 #' @param model a BGWQSR model object fit from bgwqsr_parallel
 #' @param filename optional file path to save results of plot in a pdf format
 #' @param beta_axis_pos choice to put legend for group index plots on the left or right side of plot. Options are "left" or "right".  Default is "left"

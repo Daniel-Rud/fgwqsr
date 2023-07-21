@@ -24,5 +24,6 @@ plot_results(
 void, prints plots, optionally saves plot in pdf format to filename
 }
 \description{
-A short description...
+Group index and weight plots for posterior estimates from BGWQSR with corresponding
+95% credible intervals
 }

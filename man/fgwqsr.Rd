@@ -16,19 +16,33 @@ fgwqsr(
 )
 }
 \arguments{
-\item{formula}{A formula for model fitting of FGWQSR.  Please see description for formula construction}
+\item{formula}{A formula for model fitting of FGWQSR.  Please see details for formula construction.}
 
-\item{data}{dataframe that contains all covariates and the outcome data.  Column names of dataframe should match those referenced int he model formula.}
+\item{data}{dataframe that contains all covariates and the outcome data.
+Column names of dataframe should match those referenced in the model formula.}
 
-\item{quantiles}{number of quantiles to quantize the exposure variables in the mixture portion of the model.  Default value is 5.}
+\item{quantiles}{number of quantiles to quantize the exposure variables in the
+mixture portion of the model.  Default value is 5.}
 
-\item{n_mvn_sims}{defines resolution for simulated null distribution for group index and single chemical LRTs.  Default is 10,000.}
+\item{n_mvn_sims}{defines resolution for simulated null distribution for group index and single
+chemical LRTs.  Default is 10,000.}
 
-\item{zero_threshold_cutoff}{defines a .}
+\item{zero_threshold_cutoff}{Value within (0,.5] that defines how often
+parameters estimated close to the boundary of the parameter
+space are assigned a boundary cone in the constrained multivariate normal
+monte carlo inference procedure.  A \code{zero_tolerance_threshold} value of 0.5 will
+assign parameters with FGWQSR maximum likelihood estimates of precisely 0 the
+boundary cone while a \code{zero_tolerance_threshold} value of 0 will assign all
+parameters a boundary cone.  Reasonable values may be within [0.05, 0.5] --
+all choices of \code{zero_tolerance_threshold} are asymptotically equivalent.
+The default is set to zero_tolerance_threshold = 0.5.}
 
-\item{verbose}{Displays messages and progress bar while fitting FGWQSR model.  Default is TRUE.}
+\item{verbose}{Displays messages and progress bar while fitting FGWQSR model.
+Default is TRUE.}
 
-\item{cores}{number of cores to parallelize on for fitting nested models and simulated null LRT distributions.  Default is number of available cores on user device.}
+\item{cores}{number of cores to parallelize on for fitting nested models and
+simulated null LRT distributions.
+ Default is number of available cores on user device.}
 
 \item{optim_control_list}{option to supply control options to optim.}
 }
@@ -36,9 +50,27 @@ fgwqsr(
 list with attributes from fgwqsr model fitting.
 }
 \description{
-fgwqsr fits a group signed constrained logistic regression with inference for both group indices and single chemical effects.
-The model formula that we pass to fgwqsr() is different than traditional formulas in lm and glm, as we will need to denote our mixture groups.  Three special characters are used in fgwqsr formulas:
-`|` - denotes the boundary of a mixture group, used to seperate chemicals within a mixture group.
-`/` - denotes the end of the mixture group specification, adjusting covariates can be added to the formula after this character.  If no adjusting covariates, do not need to specify.
-`i.` - precedes categorical variables to denote a categorical variable.  For example, if we have a categorical variable cat_var, we would denote this in the model formula by i.cat_var.  This is similar to the stata syntax to declare categorical variables.
+Fits a group signed constrained logistic regression with
+inference for both group indices and single chemical effects on an entire
+dataset (without requiring any data splitting).
+}
+\details{
+The model formula that is passed to fgwqsr() is different than traditional
+formulas in lm and glm, as it needs to denote mixture group arrangement.
+Three special characters are used in fgwqsr formulas:
+\itemize{  \item \code{|} - denotes the boundary of a mixture group, used to
+seperate chemicals within a mixture group.
+   \item  \code{/} - denotes the end of the mixture group specification,
+   adjusting covariates can be added to the formula after
+this character.  If no adjusting covariates, do not need to specify.
+   \item \code{i.} - precedes categorical variables to denote a categorical variable.
+For example, if we have a categorical variable cat_var, we would denote
+this in the model formula by i.cat_var.
+This is similar to the stata syntax to declare categorical variables.}
+An example formula may look like \code{formula = y ~ x1 + x2 | x3 + x4/ height + i.city}.
+For examples, please see the github package vignette or
+\url{https://github.com/Daniel-Rud/fgwqsr/blob/main/README.md}
+}
+\seealso{
+\code{\link{summary.fgwqsr}}
 }

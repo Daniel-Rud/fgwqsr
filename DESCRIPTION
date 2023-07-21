@@ -1,15 +1,16 @@
 Package: fgwqsr
 Type: Package
-Title: Frequentist Grouped Weighted Quantile Sum Regression (FGWQSR)
+Title: Frequentist Grouped Weighted Quantile Sum Regression 
 Version: 0.1.0
 Author: Daniel Rud 
 Maintainer: Daniel Rud <rud@usc.edu>
-Description: Fully frequentist model fitting to the weighted quantile sum regression model formulation, which amounts to performing group sign constrained regression.  The novelty in our approach is that we are able to perform this model fitting without needing a training and testuing split, while providing both group index and single chemical inferential estimates.  The main function in this package is the fgwqsr() function.  
+Description: Fully frequentist model fitting to the weighted quantile sum regression model formulation, which amounts to performing group sign constrained regression.  The novelty in our approach is that we are able to perform this model fitting without needing a training and testing split, while providing both group index and single chemical inferential estimates.  The main function in this package is the fgwqsr() function.  
 License: MIT + file LICENSE
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 7.2.3
 URL: https://github.com/Daniel-Rud/fgwqsr
+SystemRequirements: JAGS
 Imports: 
     future,
     future.apply,
@@ -18,6 +19,7 @@ Imports:
     fastDummies,
     statar,
     progressr,
+    progress,
     pracma,
     sigmoid,
     magrittr, 

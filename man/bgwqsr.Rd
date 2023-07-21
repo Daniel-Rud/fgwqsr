@@ -18,13 +18,17 @@ bgwqsr(
 )
 }
 \arguments{
-\item{formula}{A formula for model fitting of BGWQSR.  Please see description for formula construction}
+\item{formula}{A formula for model fitting of BGWQSR.  Please see description for
+formula construction}
 
-\item{data}{dataframe that contains all covariates and the outcome data.  Column names of dataframe should match those referenced int he model formula.}
+\item{data}{dataframe that contains all covariates and the outcome data.
+Column names of dataframe should match those referenced int he model formula.}
 
-\item{quantiles}{number of quantiles to quantize the exposure variables in the mixture portion of the model.  Default value is 5.}
+\item{quantiles}{number of quantiles to quantize the exposure variables in the
+mixture portion of the model.  Default value is 5.}
 
-\item{n.iter}{number of mcmc iterations after burnin and adapt iterations PER mcmc chain.}
+\item{n.iter}{number of mcmc iterations after burnin and adapt iterations
+PER mcmc chain.}
 
 \item{n.burnin}{number of mcmc burnin samples PER mcmc chain}
 
@@ -36,11 +40,18 @@ bgwqsr(
 
 \item{inits}{initial values to provide for prior distributions.}
 
-\item{method}{method for which}
+\item{method}{method for mcmc fitting, a passed argument to run.jags function.
+Can be one of: rjags, simple, interruptible,
+parallel, rjparallel, background, bgparallel, or snow.}
 }
 \value{
-list with attributes from fgwqsr model fitting.n
+list with attributes from bgwqsr model fitting.
+Object from \code{run.jags} function call
 }
 \description{
 Fits a BGWQSR using the runjags package in parallel over multiple cores
+}
+\details{
+For additional instructions in using the \code{bgwqsr()} function,
+please visit \url{https://github.com/Daniel-Rud/fgwqsr/blob/main/README.md}
 }

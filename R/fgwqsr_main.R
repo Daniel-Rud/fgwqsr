@@ -1,3 +1,4 @@
+# Main functions for FGWQSR
 
 clean_vars = function(vars)
 {
@@ -501,8 +502,10 @@ fit_fgwqsr = function(formula, data, quantiles, output_hessian = F,
 
   vars = clean_vars(f[3])
 
-  data = data[, c(y, unlist(vars))] # keep only variables in model, order them for fast ll
-  # NOTICE THAT DATA SET IS MODIFIED LOCALLY IN THIS FUNCTION CALL
+  # this dataset is modified locally.  Different LRT formulas specify exclusion
+  # of different variables from the dataframe.  Each local data is built to
+  # have the data organized such that it can be called in likelihood function.
+  data = data[, c(y, unlist(vars))]
 
   if(length(vars$categorical)>0) # if there are categorical variables
   {
@@ -638,8 +641,7 @@ get_cov_initial_vals = function(formula, data, quantiles)
 
   vars = clean_vars(f[3])
 
-  data = data[, c(y, unlist(vars))] # keep only variables in model, order them for fast ll
-  # NOTICE THAT DATA SET IS MODIFIED LOCALLY IN THIS FUNCTION CALL
+  data = data[, c(y, unlist(vars))]
 
   if(length(vars$categorical)>0) # if there are categorical variables
   {
@@ -724,24 +726,50 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
 
 #' Fit a FGWQSR Model
 #'
-#' @param formula A formula for model fitting of FGWQSR.  Please see description for formula construction
-#' @param data  dataframe that contains all covariates and the outcome data.  Column names of dataframe should match those referenced int he model formula.
-#' @param quantiles number of quantiles to quantize the exposure variables in the mixture portion of the model.  Default value is 5.
-#' @param n_mvn_sims defines resolution for simulated null distribution for group index and single chemical LRTs.  Default is 10,000.
-#' @param zero_threshold_cutoff defines a .
-#' @param verbose Displays messages and progress bar while fitting FGWQSR model.  Default is TRUE.
-#' @param cores number of cores to parallelize on for fitting nested models and simulated null LRT distributions.  Default is number of available cores on user device.
+#' @param formula A formula for model fitting of FGWQSR.  Please see details for formula construction.
+#' @param data  dataframe that contains all covariates and the outcome data.
+#' Column names of dataframe should match those referenced in the model formula.
+#' @param quantiles number of quantiles to quantize the exposure variables in the
+#' mixture portion of the model.  Default value is 5.
+#' @param n_mvn_sims defines resolution for simulated null distribution for group index and single
+#' chemical LRTs.  Default is 10,000.
+#' @param zero_threshold_cutoff Value within (0,.5] that defines how often
+#' parameters estimated close to the boundary of the parameter
+#' space are assigned a boundary cone in the constrained multivariate normal
+#' monte carlo inference procedure.  A \code{zero_tolerance_threshold} value of 0.5 will
+#' assign parameters with FGWQSR maximum likelihood estimates of precisely 0 the
+#' boundary cone while a \code{zero_tolerance_threshold} value of 0 will assign all
+#' parameters a boundary cone.  Reasonable values may be within [0.05, 0.5] --
+#' all choices of \code{zero_tolerance_threshold} are asymptotically equivalent.
+#' The default is set to zero_tolerance_threshold = 0.5.
+#' @param verbose Displays messages and progress bar while fitting FGWQSR model.
+#'  Default is TRUE.
+#' @param cores number of cores to parallelize on for fitting nested models and
+#' simulated null LRT distributions.
+#'  Default is number of available cores on user device.
 #' @param optim_control_list option to supply control options to optim.
 #' @return list with attributes from fgwqsr model fitting.
 #' @description
-#' fgwqsr fits a group signed constrained logistic regression with inference for both group indices and single chemical effects.
-#' The model formula that we pass to fgwqsr() is different than traditional formulas in lm and glm, as we will need to denote our mixture groups.  Three special characters are used in fgwqsr formulas:
-#' `|` - denotes the boundary of a mixture group, used to seperate chemicals within a mixture group.
-#' `/` - denotes the end of the mixture group specification, adjusting covariates can be added to the formula after this character.  If no adjusting covariates, do not need to specify.
-#'`i.` - precedes categorical variables to denote a categorical variable.  For example, if we have a categorical variable cat_var, we would denote this in the model formula by i.cat_var.  This is similar to the stata syntax to declare categorical variables.
-#' @examples
-#' For examples, please see the github package vignette or \href{https://github.com/Daniel-Rud/fgwqsr/blob/main/README.md}{README file}.
-#'
+#' Fits a group signed constrained logistic regression with
+#' inference for both group indices and single chemical effects on an entire
+#' dataset (without requiring any data splitting).
+#' @details
+#' The model formula that is passed to fgwqsr() is different than traditional
+#' formulas in lm and glm, as it needs to denote mixture group arrangement.
+#' Three special characters are used in fgwqsr formulas:
+#' \itemize{  \item \code{|} - denotes the boundary of a mixture group, used to
+#' seperate chemicals within a mixture group.
+#'    \item  \code{/} - denotes the end of the mixture group specification,
+#'    adjusting covariates can be added to the formula after
+#' this character.  If no adjusting covariates, do not need to specify.
+#'    \item \code{i.} - precedes categorical variables to denote a categorical variable.
+#' For example, if we have a categorical variable cat_var, we would denote
+#' this in the model formula by i.cat_var.
+#' This is similar to the stata syntax to declare categorical variables.}
+#' An example formula may look like \code{formula = y ~ x1 + x2 | x3 + x4/ height + i.city}.
+#' For examples, please see the github package vignette or
+#' \url{https://github.com/Daniel-Rud/fgwqsr/blob/main/README.md}
+#' @seealso \code{\link{summary.fgwqsr}}
 #' @export
 
 fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
@@ -754,6 +782,10 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
 
   # get formula and vars object that stores info about model
   f = as.character(formula); vars = clean_vars(gsub("\n", "", f[3]))
+
+  # keep only relevant covariates in dataset -- this call is so we can check for
+  # complete cases
+  data = data[c(f[2], vars %>% unlist)]
 
   # perform initial checks ##################################################
   # check if formula
@@ -770,6 +802,21 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
          Please ensure that it is a dataframe, where the
          columnames of the dataframe correspond to the variable
          names referenced in the model formula.")
+  }
+
+  # check to see if all observations have complete cases
+  if(sum(stats::complete.cases(data)) != nrow(data))
+  {
+    warning("Dataframe contains observations with missing values. Please consider
+    using na.omit(data).  Only using complete observations from passed data argument.")
+
+    data = stats::na.omit(data)
+
+    if(nrow(data) == 0)
+    {
+      stop("All observations are incomplete.  Consider using imputation, fgwqsr()
+           does not allow for missing data.")
+    }
   }
 
   # check that outcome variable is a 0 1 numeric variable
@@ -834,10 +881,10 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
     n_mvn_sims = 10000
   }
 
-  # check if zero_threshold_cutoff is in [0,.5]
-  if(zero_threshold_cutoff < 0 || zero_threshold_cutoff > .5)
+  # check if zero_threshold_cutoff is in (0,.5]
+  if(zero_threshold_cutoff <= 0 || zero_threshold_cutoff > .5)
   {
-    message("The zero_threshold_cutoff argument must be within [0,0.5].  Resetting to the default value of 0.5.")
+    message("The zero_threshold_cutoff argument must be within (0,0.5].  Resetting to the default value of 0.5.")
     zero_threshold_cutoff = .5
   }
 
@@ -989,6 +1036,7 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
                      cores = cores,
                      L_BFGS_B_convergance =L_BFGS_B_convergance,
                      param_cov_mat = cov_mat)
+
   class(return_list) = "fgwqsr"
 
   return(return_list)
@@ -998,10 +1046,16 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
 
 #' Summarize a fgwqsr model fit
 #' @param object a fitted object from a fgwqsr() call
-#' @param digits the number of rounding digits to display in summary tables.
+#' @param ... optional options -- see details
+#' @description
+#'  Summarizes a fgwqsr object.
+#'@details
+#'  Optional option `digits` to set the number of rounding digits to display in summary tables.
 #' @export
-summary.fgwqsr = function(object, digits  = 6)
+summary.fgwqsr = function(object, ...)
 {
+
+  # check for fgwqsr object
   if(!setequal(names(object), c("inference_frames","total_time",
                                    "n","ll", "formula", "aic", "bic",
                                    "vars", "n_mvn_sims", "cores",
@@ -1011,6 +1065,16 @@ summary.fgwqsr = function(object, digits  = 6)
     stop("Must pass the object output of the fgwqsr() function.  For example...
          some_model = fgwqsr(formula, data)
          summary(some_model)")
+  }
+
+  # check for optional digits option
+
+  passed_args = list(...)
+
+  digits = 6 # default
+  if(length(passed_args) == 1)
+  {
+    digits = passed_args[[1]]
   }
 
   # rounding for mixture index frame

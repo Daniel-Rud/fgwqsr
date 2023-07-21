@@ -1,8 +1,5 @@
 # File containing inference functions for FGWQSR
 
-# libraries ######################
-##################################
-
 marginal_prob_outside_direction = function(pollutant_num, mean, sigma, pollutant_direction)
 {
   # Arguments:

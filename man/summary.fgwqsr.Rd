@@ -4,13 +4,16 @@
 \alias{summary.fgwqsr}
 \title{Summarize a fgwqsr model fit}
 \usage{
-\method{summary}{fgwqsr}(object, digits = 6)
+\method{summary}{fgwqsr}(object, ...)
 }
 \arguments{
 \item{object}{a fitted object from a fgwqsr() call}
 
-\item{digits}{the number of rounding digits to display in summary tables.}
+\item{...}{optional options -- see details}
 }
 \description{
-Summarize a fgwqsr model fit
+Summarizes a fgwqsr object.
+}
+\details{
+Optional option `digits` to set the number of rounding digits to display in summary tables.
 }

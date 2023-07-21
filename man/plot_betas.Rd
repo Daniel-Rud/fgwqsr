@@ -17,5 +17,5 @@ plot_betas(model, filename = NULL, beta_axis_pos = "left")
 void, prints plots, optionally saves plot in pdf format to filename
 }
 \description{
-Plots the posterior 95% credible interval for group index posteriors from BGWQSR, as well as posterior mean.
+#' Plots the 95% credible intervals for each group index effect, along with posterior mean group index estimates, from the BGWQSR posterior distributions.
 }
