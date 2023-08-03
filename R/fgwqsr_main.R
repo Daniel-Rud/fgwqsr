@@ -933,10 +933,10 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
   if(verbose == TRUE)
   {
     progressr::handlers("progress")
-    message("\nFitting nested models for Weight Inference:")
+    message("\nFitting full model and nested models...")
     progressr::with_progress(fits <- fgwqsr_caller(formulas, data, quantiles,vars, verbose,
                                         cores, optim_control_list))
-    message("\nNow Performing Inference...")
+    message("\nGenerating LRT distributions under H0...")
   }else
   {
     fits <- fgwqsr_caller(formulas, data, quantiles,vars, verbose, cores, optim_control_list)
@@ -1056,18 +1056,20 @@ summary.fgwqsr = function(object, ...)
 {
 
   # check for fgwqsr object
-  if(!setequal(names(object), c("inference_frames","total_time",
-                                   "n","ll", "formula", "aic", "bic",
-                                   "vars", "n_mvn_sims", "cores",
-                                   "L_BFGS_B_convergance",
-                                   "param_cov_mat")))
+  if(!methods::is(object, "fgwqsr"))
   {
     stop("Must pass the object output of the fgwqsr() function.  For example...
          some_model = fgwqsr(formula, data)
          summary(some_model)")
   }
 
-  # check for optional digits option
+  print.fgwqsr(object, ...)
+
+}
+
+print.fgwqsr = function(object,...)
+{
+
 
   passed_args = list(...)
 
@@ -1077,69 +1079,122 @@ summary.fgwqsr = function(object, ...)
     digits = passed_args[[1]]
   }
 
-  # rounding for mixture index frame
-  object$inference_frames$group_index_frame[,1:2] =
-    round(object$inference_frames$group_index_frame[,1:2], digits = digits)
-
-  # fix pvalues
-  object$inference_frames$group_index_frame[,3] =
-    sapply(object$inference_frames$group_index_frame[,3],
-           FUN = format_scientific, cutoff = 10^(-digits))
-
-  # rounding for weight frame
-
-  object$inference_frames$weight_frame[,1:2] =
-    round(object$inference_frames$weight_frame[,1:2], digits = digits)
-
-  # fix pvalues
-  object$inference_frames$weight_frame[,3] =
-    sapply(object$inference_frames$weight_frame[,3],
-           FUN = format_scientific, cutoff = 10^(-digits))
-
-  # fix adjusting covariates
-
-  object$inference_frames$adj_param_frame[,1:3] =
-    round(object$inference_frames$adj_param_frame[,1:3], digits = digits)
-
-  # fix pvalues
-  object$inference_frames$adj_param_frame[,4] =
-    sapply(object$inference_frames$adj_param_frame[,4],
-           FUN = format_scientific, cutoff = 10^(-digits))
-
-  # make confidence interval rounded for adjusting covariates
-  object$inference_frames$adj_param_frame[, 5:6] =
-    round(object$inference_frames$adj_param_frame[, 5:6], digits = digits)
-
-  ci_95 = paste("(",object$inference_frames$adj_param_frame[, 5], ", ",
-                object$inference_frames$adj_param_frame[, 6], ")", sep = "")
-
-  object$inference_frames$adj_param_frame[,5] = ci_95
-  colnames(object$inference_frames$adj_param_frame)[5] = "95% CI"
-  object$inference_frames$adj_param_frame =
-    subset(object$inference_frames$adj_param_frame, select = -6) # remove column with upper 95% endpoint
-
   cat("\nCall: \nFGWQSR with formula '",gsub("  ", "",paste(format(object$formula), collapse = "")),"' on n = ",object$n," observations.", sep = "" )
   cat("\n\n", object$n_mvn_sims, " samples used for simulated LRT distirbution.",sep = "")
   cat("\n\nLog Likelihood:", object$ll, "| AIC:",object$aic, "| BIC:", object$bic)
-  cat("\n\nEstimates and Inference for Group Index Effects\n", sep = "")
-  print(object$inference_frames$group_index_frame, digits = digits)
-  cat("\nEstimates and Inference for Weights\n")
+  cat("\n\nEstimates and Inference for Group Index Effects\n\n", sep = "")
+  stats::printCoefmat(object$inference_frames$group_index_frame[,-4], digits = digits,
+                      signif.stars = T, signif.legend = F,
+                      cs.ind = 1,
+                      tst.ind = 2,
+                      P.values = T,
+                      has.Pvalue = T)
+  cat("\nEstimates and Inference for Weights\n\n")
 
   current_index = 1
   for(i in 1: length(object$vars$mixture))
   {
     group_size = object$vars$mixture[[i]] %>% length
     output = object$inference_frames$weight_frame[current_index: (current_index + group_size - 1), ]
-    print(output, digits = digits)
+    stats::printCoefmat(output[,-4], digits = digits,
+                        signif.stars = T, signif.legend = F,
+                        cs.ind = 1,
+                        tst.ind = 2,
+                        P.values = T,
+                        has.Pvalue = T)
     current_index = current_index + group_size
     cat("-------------------------------------------------\n")
   }
-  cat("\nEstimates and Inference for Intercept and Adjusting Covariates\n")
-  print(object$inference_frames$adj_param_frame)
+  cat("\nEstimates and Inference for Intercept and Adjusting Covariates\n\n")
+  stats::printCoefmat(object$inference_frames$adj_param_frame[,1:4], digits = digits,
+                      signif.stars = T, signif.legend = F,
+                      cs.ind = 1:2,
+                      tst.ind = 2,
+                      P.values = T,
+                      has.Pvalue = T)
   cat("\nSignificance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' \n")
   cat("\nTotal runtime for FGWQSR: ",
       ifelse(object$total_time < 60,paste(round(object$total_time,2), "seconds"),
              paste(round(object$total_time/60, 2), "minutes")), "on",object$cores, "cores." )
+
 }
+
+# print.fgwqsr = function(object,...)
+# {
+#
+#
+#   passed_args = list(...)
+#
+#   digits = 6 # default
+#   if(length(passed_args) == 1)
+#   {
+#     digits = passed_args[[1]]
+#   }
+#
+#   # rounding for mixture index frame
+#   object$inference_frames$group_index_frame[,1:2] =
+#     round(object$inference_frames$group_index_frame[,1:2], digits = digits)
+#
+#   # fix pvalues
+#   object$inference_frames$group_index_frame[,3] =
+#     sapply(object$inference_frames$group_index_frame[,3],
+#            FUN = format_scientific, cutoff = 10^(-digits))
+#
+#   # rounding for weight frame
+#
+#   object$inference_frames$weight_frame[,1:2] =
+#     round(object$inference_frames$weight_frame[,1:2], digits = digits)
+#
+#   # fix pvalues
+#   object$inference_frames$weight_frame[,3] =
+#     sapply(object$inference_frames$weight_frame[,3],
+#            FUN = format_scientific, cutoff = 10^(-digits))
+#
+#   # fix adjusting covariates
+#
+#   object$inference_frames$adj_param_frame[,1:3] =
+#     round(object$inference_frames$adj_param_frame[,1:3], digits = digits)
+#
+#   # fix pvalues
+#   object$inference_frames$adj_param_frame[,4] =
+#     sapply(object$inference_frames$adj_param_frame[,4],
+#            FUN = format_scientific, cutoff = 10^(-digits))
+#
+#   # make confidence interval rounded for adjusting covariates
+#   object$inference_frames$adj_param_frame[, 5:6] =
+#     round(object$inference_frames$adj_param_frame[, 5:6], digits = digits)
+#
+#   ci_95 = paste("(",object$inference_frames$adj_param_frame[, 5], ", ",
+#                 object$inference_frames$adj_param_frame[, 6], ")", sep = "")
+#
+#   object$inference_frames$adj_param_frame[,5] = ci_95
+#   colnames(object$inference_frames$adj_param_frame)[5] = "95% CI"
+#   object$inference_frames$adj_param_frame =
+#     subset(object$inference_frames$adj_param_frame, select = -6) # remove column with upper 95% endpoint
+#
+#   cat("\nCall: \nFGWQSR with formula '",gsub("  ", "",paste(format(object$formula), collapse = "")),"' on n = ",object$n," observations.", sep = "" )
+#   cat("\n\n", object$n_mvn_sims, " samples used for simulated LRT distirbution.",sep = "")
+#   cat("\n\nLog Likelihood:", object$ll, "| AIC:",object$aic, "| BIC:", object$bic)
+#   cat("\n\nEstimates and Inference for Group Index Effects\n", sep = "")
+#   print(object$inference_frames$group_index_frame, digits = digits)
+#   cat("\nEstimates and Inference for Weights\n")
+#
+#   current_index = 1
+#   for(i in 1: length(object$vars$mixture))
+#   {
+#     group_size = object$vars$mixture[[i]] %>% length
+#     output = object$inference_frames$weight_frame[current_index: (current_index + group_size - 1), ]
+#     print(output, digits = digits)
+#     current_index = current_index + group_size
+#     cat("-------------------------------------------------\n")
+#   }
+#   cat("\nEstimates and Inference for Intercept and Adjusting Covariates\n")
+#   print(object$inference_frames$adj_param_frame)
+#   cat("\nSignificance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' \n")
+#   cat("\nTotal runtime for FGWQSR: ",
+#       ifelse(object$total_time < 60,paste(round(object$total_time,2), "seconds"),
+#              paste(round(object$total_time/60, 2), "minutes")), "on",object$cores, "cores." )
+#
+# }
 
 

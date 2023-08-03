@@ -249,6 +249,19 @@ create_jags_model_string = function(data,y, vars)
 bgwqsr= function(formula, data, quantiles = 5,  n.iter = 10000 / n.chains, n.burnin = 5000,
                  n.thin = 1, n.chains=3, n.adapt= 1000, inits = NA, method = "parallel")
 {
+
+  # check to make sure user has JAGS installed
+  jags_found <-runjags::testjags(silent = T)
+  # if not both jags available and jags found
+  if(!(jags_found$JAGS.available && jags_found$JAGS.found))
+  {
+    stop("The call runjags::testjags() has returned JAGS.available = F or JAGS.found = F.
+         Please either install the JAGS module via https://sourceforge.net/projects/mcmc-jags/
+         or check why either (or both) of the aforementioned attributes of the returned list from
+         runjags::testjags() are false.")
+  }
+
+  # check to make sure formula is of type formula
   if(!inherits(formula,"formula"))
   {
     stop("The formula argument must be of type formula.

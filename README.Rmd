@@ -208,7 +208,7 @@ From the FGWQSR package, the main function we will be using to fit models if the
 The fgwqsr() function has other options too: 
 <br>
 
-* `data` - a data frame object containing variable columnames referenced in model formula (cat vars do not need to be named with i. in columnames).
+* `data` - a data frame object containing variable columnames referenced in model formula (cat vars do not need to be named with i. in column names).
 
 * `quantiles` - number of quantiles to quantize the exposure variables in the mixture portion of the model.
 

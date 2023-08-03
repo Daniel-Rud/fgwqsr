@@ -1342,7 +1342,7 @@ perform_inference = function(ll_models, params_logistic_form, vars,cov_mat,
                                                         nrow(inference_order)]%>% as.numeric),
                            check.names = F)
 
-  rownames(group_index_frame) = paste("Mixture Index", 1:num_group_effects)
+  rownames(group_index_frame) = paste("Mixture Effect", 1:num_group_effects)
 
   # weights / single pollutant LRTs
 

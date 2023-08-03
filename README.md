@@ -256,8 +256,8 @@ formulas: <br>
 <br> The fgwqsr() function has other options too: <br>
 
 - `data` - a data frame object containing variable columnames referenced
-  in model formula (cat vars do not need to be named with i. in
-  columnames).
+  in model formula (cat vars do not need to be named with i. in column
+  names).
 
 - `quantiles` - number of quantiles to quantize the exposure variables
   in the mixture portion of the model.
@@ -265,7 +265,15 @@ formulas: <br>
 - `n_mvn_sims` - defines resolution for simulated null distribution for
   group index and single chemical LRTs. Default is 10,000.
 
-- `zero_threshold_cutoff` -
+- `zero_threshold_cutoff` - Value within (0,.5\] that defines how often
+  parameters estimated close to the boundary of the parameter space are
+  assigned a boundary cone in the constrained multivariate normal monte
+  carlo inference procedure. A value of 0.5 will assign parameters with
+  FGWQSR maximum likelihood estimates of precisely 0 the boundary cone
+  while a value of 0 will assign all parameters a boundary cone.
+  Reasonable values may be within \[0.05, 0.5\] – all choices of are
+  asymptotically equivalent. The default is set to
+  zero_tolerance_threshold = 0.5.
 
 - `verbose` - Displays messages and progress bar while fitting FGWQSR
   model. Default is TRUE.
@@ -299,9 +307,9 @@ fgwqsr_fit = fgwqsr(formula = mod_formula,
                     n_mvn_sims = 100,
                     verbose = T)
 #> 
-#> Fitting nested models for Weight Inference:
+#> Fitting full model and nested models...
 #> 
-#> Now Performing Inference...
+#> Generating LRT distributions under H0...
 ```
 
 <br>
@@ -320,40 +328,43 @@ summary(fgwqsr_fit)
 #> Log Likelihood: -5960.159 | AIC: 11950.32 | BIC: 12058.47
 #> 
 #> Estimates and Inference for Group Index Effects
-#>                  Estimate        LRT P-value    
-#> Mixture Index 1 -0.702387 1168.18784  <1e-06 ***
-#> Mixture Index 2  0.024676    1.49567    0.57    
-#> Mixture Index 3  0.411345  408.88836  <1e-06 ***
+#> 
+#>                    Estimate        LRT P-value    
+#> Mixture Effect 1 -0.7023870 1168.18784  <2e-16 ***
+#> Mixture Effect 2  0.0246758    1.49567    0.57    
+#> Mixture Effect 3  0.4113445  408.88836  <2e-16 ***
 #> 
 #> Estimates and Inference for Weights
-#>    Weight Estimate        LRT P-value    
-#> X1        0.305501 128.107913  <1e-06 ***
-#> X2        0.336426 156.350666  <1e-06 ***
-#> X3        0.322359 142.164908  <1e-06 ***
-#> X4        0.023634   0.750190    0.21    
-#> X5        0.012080   0.202268    0.35    
+#> 
+#>    Weight Estimate       LRT P-value    
+#> X1       0.3055009 128.10791  <2e-16 ***
+#> X2       0.3364256 156.35067  <2e-16 ***
+#> X3       0.3223592 142.16491  <2e-16 ***
+#> X4       0.0236343   0.75019    0.21    
+#> X5       0.0120799   0.20227    0.35    
 #> -------------------------------------------------
-#>    Weight Estimate      LRT P-value  
-#> X6        0.248205 0.102211    0.42  
-#> X7        0.207174 0.071973    0.29  
-#> X8        0.111892 0.021212    0.47  
-#> X9        0.432729 0.309532    0.26  
+#>    Weight Estimate     LRT P-value
+#> X6        0.248205 0.10221    0.42
+#> X7        0.207174 0.07197    0.29
+#> X8        0.111892 0.02121    0.47
+#> X9        0.432729 0.30953    0.26
 #> -------------------------------------------------
-#>     Weight Estimate       LRT P-value    
-#> X10        0.245935 26.931807  <1e-06 ***
-#> X11        0.310206 43.508110  <1e-06 ***
-#> X12        0.376066 62.982156  <1e-06 ***
-#> X13        0.001262  0.000717    0.45    
-#> X14        0.066531  2.051216    0.09   .
+#>     Weight Estimate      LRT P-value    
+#> X10      0.24593511 26.93181  <2e-16 ***
+#> X11      0.31020577 43.50811  <2e-16 ***
+#> X12      0.37606638 62.98216  <2e-16 ***
+#> X13      0.00126201  0.00072    0.45    
+#> X14      0.06653073  2.05122    0.09 .  
 #> -------------------------------------------------
 #> 
 #> Estimates and Inference for Intercept and Adjusting Covariates
-#>            Estimate       SE         Z P(Z > |z|)                95% CI  
-#> intercept -0.012925 0.064598 -0.200085   0.841414 (-0.139536, 0.113685)  
+#> 
+#>             Estimate     SE         Z P(Z > |z|)
+#> intercept -0.0129252 0.0646 -0.200085    0.84141
 #> 
 #> Significance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' 
 #> 
-#> Total runtime for FGWQSR:  1.37 minutes on 10 cores.
+#> Total runtime for FGWQSR:  1.13 minutes on 10 cores.
 ```
 
 <br> We can compare the true underlying group indices and chemical
@@ -378,10 +389,10 @@ weight_frame = data.frame("True Weight" = true_weights,
                           "Signficiant?" = ifelse(fgwqsr_fit$inference_frames$weight_frame[,3] < .05, "Yes", "No"), check.names = F)
 
 group_index_frame; weight_frame
-#>                 True Group Index Estimated Group Index Signficiant?
-#> Mixture Index 1              0.5                 0.495          Yes
-#> Mixture Index 2              1.0                 1.025           No
-#> Mixture Index 3              1.5                 1.509          Yes
+#>                  True Group Index Estimated Group Index Signficiant?
+#> Mixture Effect 1              0.5                 0.495          Yes
+#> Mixture Effect 2              1.0                 1.025           No
+#> Mixture Effect 3              1.5                 1.509          Yes
 #>     True Weight Estimated Weight Signficiant?
 #> w11       0.333            0.306          Yes
 #> w12       0.333            0.336          Yes
@@ -466,9 +477,9 @@ fgwqsr_fit_adj = fgwqsr(formula = mod_formula_adj,
                     n_mvn_sims = 100,
                     verbose = T)
 #> 
-#> Fitting nested models for Weight Inference:
+#> Fitting full model and nested models...
 #> 
-#> Now Performing Inference...
+#> Generating LRT distributions under H0...
 ```
 
 <br> Again, we use the function summary() to view the results of the
@@ -486,43 +497,46 @@ summary(fgwqsr_fit_adj)
 #> Log Likelihood: -5556.169 | AIC: 11148.34 | BIC: 11278.12
 #> 
 #> Estimates and Inference for Group Index Effects
-#>                  Estimate       LRT P-value    
-#> Mixture Index 1 -0.721974 1153.2447  <1e-06 ***
-#> Mixture Index 2  0.070848   13.1311    0.01  **
-#> Mixture Index 3  0.403725  375.4276  <1e-06 ***
+#> 
+#>                    Estimate       LRT P-value    
+#> Mixture Effect 1 -0.7219736 1153.2447  <2e-16 ***
+#> Mixture Effect 2  0.0708484   13.1311    0.01 ** 
+#> Mixture Effect 3  0.4037247  375.4276  <2e-16 ***
 #> 
 #> Estimates and Inference for Weights
-#>    Weight Estimate        LRT P-value    
-#> X1        0.367200 178.322269  <1e-06 ***
-#> X2        0.287866 110.033798  <1e-06 ***
-#> X3        0.337621 150.472596  <1e-06 ***
-#> X4        0.003173   0.013089    0.54    
-#> X5        0.004141   0.026154    0.43    
+#> 
+#>    Weight Estimate       LRT P-value    
+#> X1      0.36719961 178.32227  <2e-16 ***
+#> X2      0.28786631 110.03380  <2e-16 ***
+#> X3      0.33762099 150.47260  <2e-16 ***
+#> X4      0.00317254   0.01309    0.54    
+#> X5      0.00414055   0.02615    0.43    
 #> -------------------------------------------------
-#>    Weight Estimate      LRT P-value  
-#> X6        0.027973 0.009814    0.53  
-#> X7        0.652795 5.397737    0.02 *
-#> X8        0.147947 0.280936    0.33  
-#> X9        0.171285 0.367393    0.24  
+#>    Weight Estimate     LRT P-value  
+#> X6       0.0279733 0.00981    0.53  
+#> X7       0.6527946 5.39774    0.02 *
+#> X8       0.1479473 0.28094    0.33  
+#> X9       0.1712847 0.36739    0.24  
 #> -------------------------------------------------
 #>     Weight Estimate     LRT P-value    
-#> X10        0.318641 42.0794  <1e-06 ***
-#> X11        0.330624 45.7642  <1e-06 ***
-#> X12        0.350735 50.9094  <1e-06 ***
+#> X10        0.318641 42.0794  <2e-16 ***
+#> X11        0.330624 45.7642  <2e-16 ***
+#> X12        0.350735 50.9094  <2e-16 ***
 #> X13        0.000000  0.0000    0.74    
 #> X14        0.000000  0.0000    0.78    
 #> -------------------------------------------------
 #> 
 #> Estimates and Inference for Intercept and Adjusting Covariates
-#>              Estimate       SE          Z P(Z > |z|)                 95% CI    
-#> intercept   -2.661611 0.624433  -4.262446      2e-05 (-3.885477, -1.437746) ***
-#> weight       0.039620 0.009127   4.340902    1.4e-05   (0.021731, 0.057509) ***
-#> city_city_2  0.216813 0.054042   4.011911      6e-05   (0.110892, 0.322733) ***
-#> city_city_3 -1.035485 0.059087 -17.524742     <1e-06 (-1.151293, -0.919676) ***
+#> 
+#>                Estimate      SE         Z P(Z > |z|)    
+#> intercept   -2.66161146 0.62443  -4.26245 2.0220e-05 ***
+#> weight       0.03962030 0.00913   4.34090 1.4190e-05 ***
+#> city_city_2  0.21681253 0.05404   4.01191 6.0229e-05 ***
+#> city_city_3 -1.03548465 0.05909 -17.52474 < 2.22e-16 ***
 #> 
 #> Significance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' 
 #> 
-#> Total runtime for FGWQSR:  1.35 minutes on 10 cores.
+#> Total runtime for FGWQSR:  1.11 minutes on 10 cores.
 ```
 
 <br>
@@ -554,10 +568,10 @@ adj_cov_frame = data.frame("True Covariate Effect" = c(-3.3, .5,.2,-1),
 rownames(adj_cov_frame) = rownames(fgwqsr_fit_adj$inference_frames$adj_param_frame)
 
 group_index_frame; weight_frame; adj_cov_frame
-#>                 True Group Index Estimated Group Index Signficiant?
-#> Mixture Index 1              0.5                 0.486          Yes
-#> Mixture Index 2              1.0                 1.073          Yes
-#> Mixture Index 3              1.5                 1.497          Yes
+#>                  True Group Index Estimated Group Index Signficiant?
+#> Mixture Effect 1              0.5                 0.486          Yes
+#> Mixture Effect 2              1.0                 1.073          Yes
+#> Mixture Effect 3              1.5                 1.497          Yes
 #>     True Weight Estimated Weight Signficiant?
 #> w11       0.333            0.367          Yes
 #> w12       0.333            0.288          Yes
@@ -631,7 +645,7 @@ bgwqsr_fit = bgwqsr(formula = mod_formula_adj,
 #> Calling 3 simulations using the parallel method...
 #> Following the progress of chain 1 (the program will wait for all chains
 #> to finish before continuing):
-#> Welcome to JAGS 4.3.2 (official binary) on Sun Jul 16 22:01:16 2023
+#> Welcome to JAGS 4.3.2 (official binary) on Thu Aug  3 15:33:11 2023
 #> JAGS is free software and comes with ABSOLUTELY NO WARRANTY
 #> Loading module: basemod: ok
 #> Loading module: bugs: ok
@@ -654,7 +668,6 @@ bgwqsr_fit = bgwqsr(formula = mod_formula_adj,
 #> ************************************************** 100%
 #> . . . . Updating 0
 #> . Deleting model
-#> . 
 #> All chains have finished
 #> Simulation complete.  Reading coda files...
 #> Coda files loaded successfully
@@ -673,49 +686,49 @@ the summaries object from the bgwqsr model.
 ``` r
 bgwqsr_fit$model$summaries
 #>                      Lower95      Median    Upper95        Mean          SD
-#> B0              -3.55711e+00 -2.25996000 -1.0407000 -2.27178812 0.652755251
-#> B1              -7.69727e-01 -0.72339850 -0.6795400 -0.72410366 0.022782369
-#> B2               2.16779e-02  0.06320400  0.1073620  0.06335861 0.021911984
-#> B3               3.65855e-01  0.40733550  0.4516230  0.40724183 0.021791161
-#> phi_weight       1.62801e-02  0.03423095  0.0529825  0.03430673 0.009555526
-#> phi_city_city_2  4.88549e-02  0.18657150  0.3057250  0.18309601 0.063409010
-#> phi_city_city_3 -1.16454e+00 -1.04686000 -0.9268140 -1.04665499 0.061271654
-#> w1[1]            3.02566e-01  0.35947850  0.4081240  0.35836891 0.026471944
-#> w1[2]            2.26789e-01  0.27790300  0.3293680  0.27882246 0.026114284
-#> w1[3]            2.83654e-01  0.32907200  0.3812630  0.33030669 0.025884018
-#> w1[4]            9.43387e-04  0.01972260  0.0540130  0.02239856 0.016152160
-#> w1[5]            3.25978e-05  0.00588268  0.0358860  0.01010339 0.011300259
-#> w2[1]            1.97104e-04  0.12729200  0.6097850  0.19431115 0.192710972
-#> w2[2]            1.69006e-04  0.40549800  0.8812470  0.39994005 0.288016735
-#> w2[3]            2.15698e-04  0.12324100  0.5079120  0.16556919 0.154824562
-#> w2[4]            4.75868e-04  0.20537000  0.5794240  0.24017960 0.183182667
-#> w3[1]            2.12983e-01  0.30348700  0.4036760  0.30205396 0.048286199
-#> w3[2]            2.35912e-01  0.31834450  0.4098160  0.31804330 0.044601890
-#> w3[3]            2.47873e-01  0.33566850  0.4291370  0.33585066 0.046611310
-#> w3[4]            1.02734e-03  0.01596800  0.0628104  0.02246606 0.019409349
-#> w3[5]            3.47274e-05  0.01413725  0.0710085  0.02158601 0.023812656
+#> B0              -3.41273e+00 -2.12428000 -0.9028630 -2.13380252 0.661837747
+#> B1              -7.71074e-01 -0.72503650 -0.6806060 -0.72537830 0.023587364
+#> B2               1.96039e-02  0.06073335  0.0999250  0.06062689 0.020883301
+#> B3               3.65088e-01  0.40809650  0.4499350  0.40775981 0.021391236
+#> phi_weight       1.46445e-02  0.03222635  0.0519251  0.03237327 0.009732472
+#> phi_city_city_2  6.25986e-02  0.18485350  0.2929000  0.18382036 0.059122404
+#> phi_city_city_3 -1.16384e+00 -1.04874500 -0.9312250 -1.04846931 0.059948509
+#> w1[1]            3.10031e-01  0.35901100  0.4100450  0.35728153 0.025613528
+#> w1[2]            2.31327e-01  0.27804900  0.3348240  0.27797406 0.026387614
+#> w1[3]            2.73779e-01  0.32544600  0.3748780  0.32631108 0.025981286
+#> w1[4]            4.75491e-05  0.01013670  0.0441801  0.01387641 0.014103587
+#> w1[5]            2.45905e-04  0.02451640  0.0492053  0.02455690 0.014961278
+#> w2[1]            7.37600e-04  0.13951000  0.4945270  0.18025597 0.161376595
+#> w2[2]            1.49478e-04  0.45208800  0.9470420  0.42178710 0.333197559
+#> w2[3]            9.02283e-05  0.06863615  0.5864340  0.14638910 0.189965132
+#> w2[4]            1.51517e-03  0.18338550  0.7731790  0.25156782 0.233090798
+#> w3[1]            2.11589e-01  0.30103150  0.3898180  0.29923034 0.047799525
+#> w3[2]            2.29993e-01  0.31922250  0.4072830  0.31770958 0.046368542
+#> w3[3]            2.51638e-01  0.34019600  0.4347630  0.34043288 0.047018854
+#> w3[4]            3.39058e-04  0.01415870  0.0555459  0.01990778 0.018339622
+#> w3[5]            1.25381e-04  0.01798075  0.0612273  0.02271944 0.019595252
 #>                 Mode        MCerr MC%ofSD SSeff      AC.10     psrf
-#> B0                NA 0.0238590811     3.7   749 0.15548827 1.025777
-#> B1                NA 0.0006389431     2.8  1271 0.02267380 1.003340
-#> B2                NA 0.0006457201     2.9  1152 0.08644775 1.055187
-#> B3                NA 0.0005555580     2.5  1539 0.04582697 1.005799
-#> phi_weight        NA 0.0003622338     3.8   696 0.15754240 1.026851
-#> phi_city_city_2   NA 0.0034037958     5.4   347 0.19702839 1.021648
-#> phi_city_city_3   NA 0.0019399186     3.2   998 0.07602362 1.010514
-#> w1[1]             NA 0.0013857804     5.2   365 0.14979667 1.047027
-#> w1[2]             NA 0.0015142318     5.8   297 0.20909889 1.009768
-#> w1[3]             NA 0.0014150427     5.5   335 0.18476908 1.010193
-#> w1[4]             NA 0.0029364530    18.2    30 0.80812467 1.602143
-#> w1[5]             NA 0.0019198702    17.0    35 0.80212529 1.728683
-#> w2[1]             NA 0.0398628916    20.7    23 0.83305438 1.850762
-#> w2[2]             NA 0.0578111877    20.1    25 0.84776387 2.058091
-#> w2[3]             NA 0.0235549435    15.2    43 0.74814264 1.299853
-#> w2[4]             NA 0.0315730536    17.2    34 0.78167795 1.434148
-#> w3[1]             NA 0.0034806728     7.2   192 0.32942611 1.000923
-#> w3[2]             NA 0.0027849847     6.2   256 0.19352683 1.060069
-#> w3[3]             NA 0.0030985597     6.6   226 0.24968224 1.007005
-#> w3[4]             NA 0.0039060400    20.1    25 0.84041764 1.307446
-#> w3[5]             NA 0.0040386666    17.0    35 0.81533315 1.929514
+#> B0                NA 0.0366659158     5.5   326 0.16542471 1.058841
+#> B1                NA 0.0006744405     2.9  1223 0.02434819 1.002149
+#> B2                NA 0.0006137575     2.9  1158 0.04445830 1.117741
+#> B3                NA 0.0005643491     2.6  1437 0.03361305 1.003649
+#> phi_weight        NA 0.0005587788     5.7   303 0.16757459 1.066254
+#> phi_city_city_2   NA 0.0023645464     4.0   625 0.07424356 1.005846
+#> phi_city_city_3   NA 0.0017177313     2.9  1218 0.01416054 1.001210
+#> w1[1]             NA 0.0013703750     5.4   349 0.13302945 1.004929
+#> w1[2]             NA 0.0014779093     5.6   319 0.14283951 1.018734
+#> w1[3]             NA 0.0016191259     6.2   257 0.16131391 1.028073
+#> w1[4]             NA 0.0025918484    18.4    30 0.78934898 1.979973
+#> w1[5]             NA 0.0027030364    18.1    31 0.80974423 1.260754
+#> w2[1]             NA 0.0264491639    16.4    37 0.80478535 1.225026
+#> w2[2]             NA 0.0577072214    17.3    33 0.78715046 3.535312
+#> w2[3]             NA 0.0428085624    22.5    20 0.85828129 1.710840
+#> w2[4]             NA 0.0405026270    17.4    33 0.82571197 1.659761
+#> w3[1]             NA 0.0029453542     6.2   263 0.21781170 1.005608
+#> w3[2]             NA 0.0028011142     6.0   274 0.17817684 1.002106
+#> w3[3]             NA 0.0030271245     6.4   241 0.25073098 1.002907
+#> w3[4]             NA 0.0034971990    19.1    28 0.82861071 1.424545
+#> w3[5]             NA 0.0032998754    16.8    35 0.79147539 1.423923
 ```
 
 We can analyze the mixing of the markov chains and corresponding
