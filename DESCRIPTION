@@ -35,12 +35,12 @@ Suggests:
     rmarkdown (>= 2.23),
     testthat (>= 3.0.0)
 VignetteBuilder: 
-    coda (>= 0.19.4),
-    gridExtra (>= 2.3),
+    coda,
+    gridExtra,
     knitr,
-    mvtnorm (>= 1.2.2),
+    mvtnorm,
     rmarkdown,
-    runjags (>= 2.2.2.1)
+    runjags
 Config/testthat/edition: 3
 Encoding: UTF-8
 LazyData: true

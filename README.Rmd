@@ -240,7 +240,7 @@ mod_formula = y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X12 +
 ```
 <br>
 
-Notice that we did not use the "$/$" character since we did not include adjusting covariates.  Now, we can fit the model using the function fgwqsr().
+Notice that we did not use the `/` character since we did not include adjusting covariates.  Now, we can fit the model using the function fgwqsr().
 ```{r}
 fgwqsr_fit = fgwqsr(formula = mod_formula,
                     data = data,
@@ -285,7 +285,7 @@ group_index_frame; weight_frame
 
 # Fitting with Adjusting Continuous and Categorical Covariates
 
-As mentioned earlier, the "$/$" character in the model formula sent to fgwqsr() indicates that adjusting covariates follow this character.  Continuous characters can be referenced with their columnname from the dataset, while categorical variables need to be referenced using the prefix "i.".  We will illustrate this through an example where we create a continuous $weight$ variable and a categorical $city$ variable.  We will give an effect (in log odds scale) of .5 to weight, .2 to the comparison between city 2 and reference city 1, and -1 to the comparison between city 3 and city 1.
+As mentioned earlier, the `/` character in the model formula sent to fgwqsr() indicates that adjusting covariates follow this character.  Continuous characters can be referenced with their columnname from the dataset, while categorical variables need to be referenced using the prefix `i.`.  We will illustrate this through an example where we create a continuous `weight` variable and a categorical `city` variable.  We will give an effect (in log odds scale) of .5 to weight, .2 to the comparison between city 2 and reference city 1, and -1 to the comparison between city 3 and city 1.
 
 <br>
 
@@ -395,7 +395,7 @@ We also provide in this package functions to run BGWQSR models using the runjags
 
 * `inits` initial values to provide for prior distributions.
 
-* `method` method for mcmc fitting, a passed argument to run.jags function.  Can be one of: `rjags`, `simple`, `interruptible`,' `parallel`, `rjparallel`, `background`, `bgparallel`, or `snow`.
+* `method` method for mcmc fitting, a passed argument to run.jags function.  Can be one of: `rjags`, `simple`, `interruptible`, `parallel`, `rjparallel`, `background`, `bgparallel`, or `snow`.
 
 
 ```{r}

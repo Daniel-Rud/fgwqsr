@@ -296,7 +296,7 @@ mod_formula = y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X12 +
 
 <br>
 
-Notice that we did not use the “$/$” character since we did not include
+Notice that we did not use the `/` character since we did not include
 adjusting covariates. Now, we can fit the model using the function
 fgwqsr().
 
@@ -364,7 +364,7 @@ summary(fgwqsr_fit)
 #> 
 #> Significance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' 
 #> 
-#> Total runtime for FGWQSR:  1.13 minutes on 10 cores.
+#> Total runtime for FGWQSR:  1.31 minutes on 10 cores.
 ```
 
 <br> We can compare the true underlying group indices and chemical
@@ -414,12 +414,12 @@ group_index_frame; weight_frame
 
 # Fitting with Adjusting Continuous and Categorical Covariates
 
-As mentioned earlier, the “$/$” character in the model formula sent to
+As mentioned earlier, the `/` character in the model formula sent to
 fgwqsr() indicates that adjusting covariates follow this character.
 Continuous characters can be referenced with their columnname from the
 dataset, while categorical variables need to be referenced using the
-prefix “i.”. We will illustrate this through an example where we create
-a continuous $weight$ variable and a categorical $city$ variable. We
+prefix `i.`. We will illustrate this through an example where we create
+a continuous `weight` variable and a categorical `city` variable. We
 will give an effect (in log odds scale) of .5 to weight, .2 to the
 comparison between city 2 and reference city 1, and -1 to the comparison
 between city 3 and city 1.
@@ -536,7 +536,7 @@ summary(fgwqsr_fit_adj)
 #> 
 #> Significance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' 
 #> 
-#> Total runtime for FGWQSR:  1.11 minutes on 10 cores.
+#> Total runtime for FGWQSR:  1.28 minutes on 10 cores.
 ```
 
 <br>
@@ -629,7 +629,7 @@ function takes several arguments:
 - `inits` initial values to provide for prior distributions.
 
 - `method` method for mcmc fitting, a passed argument to run.jags
-  function. Can be one of: `rjags`, `simple`, `interruptible`,’
+  function. Can be one of: `rjags`, `simple`, `interruptible`,
   `parallel`, `rjparallel`, `background`, `bgparallel`, or `snow`.
 
 ``` r
@@ -645,7 +645,7 @@ bgwqsr_fit = bgwqsr(formula = mod_formula_adj,
 #> Calling 3 simulations using the parallel method...
 #> Following the progress of chain 1 (the program will wait for all chains
 #> to finish before continuing):
-#> Welcome to JAGS 4.3.2 (official binary) on Thu Aug  3 15:33:11 2023
+#> Welcome to JAGS 4.3.2 (official binary) on Tue Aug  8 11:37:26 2023
 #> JAGS is free software and comes with ABSOLUTELY NO WARRANTY
 #> Loading module: basemod: ok
 #> Loading module: bugs: ok
@@ -685,50 +685,50 @@ the summaries object from the bgwqsr model.
 
 ``` r
 bgwqsr_fit$model$summaries
-#>                      Lower95      Median    Upper95        Mean          SD
-#> B0              -3.41273e+00 -2.12428000 -0.9028630 -2.13380252 0.661837747
-#> B1              -7.71074e-01 -0.72503650 -0.6806060 -0.72537830 0.023587364
-#> B2               1.96039e-02  0.06073335  0.0999250  0.06062689 0.020883301
-#> B3               3.65088e-01  0.40809650  0.4499350  0.40775981 0.021391236
-#> phi_weight       1.46445e-02  0.03222635  0.0519251  0.03237327 0.009732472
-#> phi_city_city_2  6.25986e-02  0.18485350  0.2929000  0.18382036 0.059122404
-#> phi_city_city_3 -1.16384e+00 -1.04874500 -0.9312250 -1.04846931 0.059948509
-#> w1[1]            3.10031e-01  0.35901100  0.4100450  0.35728153 0.025613528
-#> w1[2]            2.31327e-01  0.27804900  0.3348240  0.27797406 0.026387614
-#> w1[3]            2.73779e-01  0.32544600  0.3748780  0.32631108 0.025981286
-#> w1[4]            4.75491e-05  0.01013670  0.0441801  0.01387641 0.014103587
-#> w1[5]            2.45905e-04  0.02451640  0.0492053  0.02455690 0.014961278
-#> w2[1]            7.37600e-04  0.13951000  0.4945270  0.18025597 0.161376595
-#> w2[2]            1.49478e-04  0.45208800  0.9470420  0.42178710 0.333197559
-#> w2[3]            9.02283e-05  0.06863615  0.5864340  0.14638910 0.189965132
-#> w2[4]            1.51517e-03  0.18338550  0.7731790  0.25156782 0.233090798
-#> w3[1]            2.11589e-01  0.30103150  0.3898180  0.29923034 0.047799525
-#> w3[2]            2.29993e-01  0.31922250  0.4072830  0.31770958 0.046368542
-#> w3[3]            2.51638e-01  0.34019600  0.4347630  0.34043288 0.047018854
-#> w3[4]            3.39058e-04  0.01415870  0.0555459  0.01990778 0.018339622
-#> w3[5]            1.25381e-04  0.01798075  0.0612273  0.02271944 0.019595252
-#>                 Mode        MCerr MC%ofSD SSeff      AC.10     psrf
-#> B0                NA 0.0366659158     5.5   326 0.16542471 1.058841
-#> B1                NA 0.0006744405     2.9  1223 0.02434819 1.002149
-#> B2                NA 0.0006137575     2.9  1158 0.04445830 1.117741
-#> B3                NA 0.0005643491     2.6  1437 0.03361305 1.003649
-#> phi_weight        NA 0.0005587788     5.7   303 0.16757459 1.066254
-#> phi_city_city_2   NA 0.0023645464     4.0   625 0.07424356 1.005846
-#> phi_city_city_3   NA 0.0017177313     2.9  1218 0.01416054 1.001210
-#> w1[1]             NA 0.0013703750     5.4   349 0.13302945 1.004929
-#> w1[2]             NA 0.0014779093     5.6   319 0.14283951 1.018734
-#> w1[3]             NA 0.0016191259     6.2   257 0.16131391 1.028073
-#> w1[4]             NA 0.0025918484    18.4    30 0.78934898 1.979973
-#> w1[5]             NA 0.0027030364    18.1    31 0.80974423 1.260754
-#> w2[1]             NA 0.0264491639    16.4    37 0.80478535 1.225026
-#> w2[2]             NA 0.0577072214    17.3    33 0.78715046 3.535312
-#> w2[3]             NA 0.0428085624    22.5    20 0.85828129 1.710840
-#> w2[4]             NA 0.0405026270    17.4    33 0.82571197 1.659761
-#> w3[1]             NA 0.0029453542     6.2   263 0.21781170 1.005608
-#> w3[2]             NA 0.0028011142     6.0   274 0.17817684 1.002106
-#> w3[3]             NA 0.0030271245     6.4   241 0.25073098 1.002907
-#> w3[4]             NA 0.0034971990    19.1    28 0.82861071 1.424545
-#> w3[5]             NA 0.0032998754    16.8    35 0.79147539 1.423923
+#>                      Lower95       Median    Upper95        Mean          SD
+#> B0              -3.53927e+00 -2.286090000 -1.0641100 -2.29514187 0.647188056
+#> B1              -7.71618e-01 -0.725594500 -0.6802950 -0.72600666 0.023281395
+#> B2               2.48170e-02  0.067183450  0.1064120  0.06682902 0.021013931
+#> B3               3.63396e-01  0.405669500  0.4482870  0.40549247 0.021815428
+#> phi_weight       1.58764e-02  0.034617100  0.0523520  0.03463890 0.009468406
+#> phi_city_city_2  5.93938e-02  0.189031000  0.3114370  0.18530513 0.062164651
+#> phi_city_city_3 -1.16995e+00 -1.046205000 -0.9372110 -1.04638597 0.060317104
+#> w1[1]            3.07839e-01  0.356152000  0.4095100  0.35625033 0.025842088
+#> w1[2]            2.24884e-01  0.275743500  0.3197080  0.27559688 0.024798637
+#> w1[3]            2.71770e-01  0.327315000  0.3735700  0.32706019 0.025610927
+#> w1[4]            1.33696e-03  0.020274100  0.0503198  0.02276905 0.014979708
+#> w1[5]            8.90119e-04  0.012926500  0.0481118  0.01832354 0.014410208
+#> w2[1]            3.09801e-04  0.086151500  0.4309210  0.12864506 0.135000798
+#> w2[2]            5.91988e-03  0.534381000  0.8665020  0.51481842 0.222855538
+#> w2[3]            4.83847e-03  0.195003500  0.5647470  0.23334274 0.175352329
+#> w2[4]            2.76834e-04  0.051014500  0.4825230  0.12319379 0.158556710
+#> w3[1]            2.22839e-01  0.307345000  0.3915540  0.30785762 0.043965458
+#> w3[2]            2.25217e-01  0.315857000  0.4047790  0.31716234 0.047938569
+#> w3[3]            2.51303e-01  0.338936500  0.4357180  0.33998408 0.048695172
+#> w3[4]            9.60607e-05  0.012377400  0.0486705  0.01700009 0.015804272
+#> w3[5]            4.23129e-05  0.009831325  0.0653361  0.01799586 0.021236808
+#>                 Mode        MCerr MC%ofSD SSeff       AC.10     psrf
+#> B0                NA 0.0253886867     3.9   650 0.135763520 1.017037
+#> B1                NA 0.0006931134     3.0  1128 0.032869224 1.002232
+#> B2                NA 0.0005784176     2.8  1320 0.056233169 1.015088
+#> B3                NA 0.0005686181     2.6  1472 0.004884026 1.004865
+#> phi_weight        NA 0.0003693389     3.9   657 0.137666665 1.013025
+#> phi_city_city_2   NA 0.0024062599     3.9   667 0.093881308 1.055444
+#> phi_city_city_3   NA 0.0019781051     3.3   930 0.027895352 1.005674
+#> w1[1]             NA 0.0014317339     5.5   326 0.160912107 1.009568
+#> w1[2]             NA 0.0013968559     5.6   315 0.133037467 1.016247
+#> w1[3]             NA 0.0013598875     5.3   355 0.095049596 1.008427
+#> w1[4]             NA 0.0024807777    16.6    36 0.772736549 1.395213
+#> w1[5]             NA 0.0036835894    25.6    15 0.881665667 1.098312
+#> w2[1]             NA 0.0239360536    17.7    32 0.802805171 1.654769
+#> w2[2]             NA 0.0380533511    17.1    34 0.787361353 1.194114
+#> w2[3]             NA 0.0277237983    15.8    40 0.760532625 1.159015
+#> w2[4]             NA 0.0289947421    18.3    30 0.849374376 1.585827
+#> w3[1]             NA 0.0027343913     6.2   259 0.186245077 1.010975
+#> w3[2]             NA 0.0032666415     6.8   215 0.227136444 1.034784
+#> w3[3]             NA 0.0033133871     6.8   216 0.229120984 1.006265
+#> w3[4]             NA 0.0028756431    18.2    30 0.780826653 1.977867
+#> w3[5]             NA 0.0046767564    22.0    21 0.873804267 1.676826
 ```
 
 We can analyze the mixing of the markov chains and corresponding
