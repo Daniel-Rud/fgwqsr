@@ -195,7 +195,7 @@ Now, we are ready to fit a FGWQSR model
 
 # Fitting using FGWQSR 
 <br>
-From the FGWQSR package, the main function we will be using to fit models if the fgwqsr() function.  The model formula that we specify will be different than traditional formulas in lm and glm, as we will need to denote our mixture groups.  Three special characters are used in fgwqsr formulas: 
+From the FGWQSR package, the main function we will be using to fit models if the `fgwqsr()` function.  The model formula that we specify will be different than traditional formulas in lm and glm, as we will need to denote our mixture groups.  Three special characters are used in fgwqsr formulas: 
 <br>
 
 * `|` - denotes the boundary of a mixture group, used to seperate chemicals within a mixture group. 
@@ -205,7 +205,7 @@ From the FGWQSR package, the main function we will be using to fit models if the
 * `i.` - precedes categorical variables to denote a categorical variable.  For example, if we have a categorical variable cat_var, we would denote this in the model formula by i.cat_var.  This is similar to the stata syntax to declare categorical variables.  
 
 <br>
-The fgwqsr() function has other options too: 
+The `fgwqsr()` function has other options too: 
 <br>
 
 * `data` - a data frame object containing variable columnames referenced in model formula (cat vars do not need to be named with i. in column names).
@@ -240,18 +240,18 @@ mod_formula = y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X12 +
 ```
 <br>
 
-Notice that we did not use the `/` character since we did not include adjusting covariates.  Now, we can fit the model using the function fgwqsr().
+Notice that we did not use the `/` character since we did not include adjusting covariates.  Now, we can fit the model using the function `fgwqsr()`.
 ```{r}
 fgwqsr_fit = fgwqsr(formula = mod_formula,
                     data = data,
                     quantiles = 5,
-                    n_mvn_sims = 100,
+                    n_mvn_sims = 10000,
                     verbose = T)
 
 ```
 <br>
 
-We can see the model summary using the call summary()
+We can see the model summary using the call `summary()`
 
 ```{r}
 
@@ -285,7 +285,7 @@ group_index_frame; weight_frame
 
 # Fitting with Adjusting Continuous and Categorical Covariates
 
-As mentioned earlier, the `/` character in the model formula sent to fgwqsr() indicates that adjusting covariates follow this character.  Continuous characters can be referenced with their columnname from the dataset, while categorical variables need to be referenced using the prefix `i.`.  We will illustrate this through an example where we create a continuous `weight` variable and a categorical `city` variable.  We will give an effect (in log odds scale) of .5 to weight, .2 to the comparison between city 2 and reference city 1, and -1 to the comparison between city 3 and city 1.
+As mentioned earlier, the `/` character in the model formula sent to `fgwqsr()` indicates that adjusting covariates follow this character.  Continuous characters can be referenced with their columnname from the dataset, while categorical variables need to be referenced using the prefix `i.`.  We will illustrate this through an example where we create a continuous `weight` variable and a categorical `city` variable.  We will give an effect (in log odds scale) of .5 to weight, .2 to the comparison between city 2 and reference city 1, and -1 to the comparison between city 3 and city 1.
 
 <br>
 
@@ -321,7 +321,7 @@ head(data)
 ```
 
 <br>
-Now, we specify the formula to include the continuous and categorical variables and call fgwqsr().
+Now, we specify the formula to include the continuous and categorical variables and call `fgwqsr()`.
 ```{r}
 
 mod_formula_adj = y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X12 + X13 + X14 / weight + i.city
@@ -329,12 +329,12 @@ mod_formula_adj = y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X
 fgwqsr_fit_adj = fgwqsr(formula = mod_formula_adj,
                     data = data,
                     quantiles = 5,
-                    n_mvn_sims = 100,
+                    n_mvn_sims = 10000,
                     verbose = T)
 
 ```
 <br>
-Again, we use the function summary() to view the results of the fgwqsr() call.
+Again, we use the function `summary()` to view the results of the `fgwqsr()` call.
 
 ```{r}
 
@@ -375,7 +375,7 @@ group_index_frame; weight_frame; adj_cov_frame
 
 # Fitting Models with BGWQSR
 
-We also provide in this package functions to run BGWQSR models using the runjags package.  The bgwqsr() function takes a model formulation similar to that in fgwqsr(), also utilizing the special characters "$|$", "$/$", and "i.".  Fitting the BGWQSR model using runjags allows us to leverage the "parallel" method in runjags that allows us to fit independent mcmc chains on multiple cores, speeding up fitting time.  The bgwqsr() function takes several arguments: 
+We also provide in this package functions to run BGWQSR models using the runjags package.  The `bgwqsr()` function takes a model formulation similar to that in `fgwqsr()`, also utilizing the special characters "$|$", "$/$", and "i.".  Fitting the BGWQSR model using runjags allows us to leverage the "parallel" method in runjags that allows us to fit independent mcmc chains on multiple cores, speeding up fitting time.  The `bgwqsr()` function takes several arguments: 
 
 * `formula`  A formula for model fitting of BGWQSR.  Please see description for formula construction
 
@@ -403,10 +403,11 @@ We also provide in this package functions to run BGWQSR models using the runjags
 bgwqsr_fit = bgwqsr(formula = mod_formula_adj,
                     data = data,
                     quantiles = 5,
-                    n.iter = 1000,
-                    n.burnin = 40,
-                    n.thin = 1, n.chains = 3,
-                    n.adapt = 10,
+                    n.iter = 5000,
+                    n.adapt = 1000,
+                    n.burnin = 4000,
+                    n.thin = 1, 
+                    n.chains = 3,
                     method = "parallel")
 
 ```
@@ -441,7 +442,7 @@ coda::densplot(bgwqsr_fit$model$mcmc) # posterior density plots
 plot(bgwqsr_fit$model$mcmc) # combines traceplot() and densplot()
 ```
 
-Finally, we can look at plots for the posterior credible intervals for group indices, single chemical weights, and corresponding posterior means.  To do this, we can use the functions plot_weights(), plot_betas(), and plot_result().  plot_results() combines both plots generates by plot_weights and plot_betas into a side by side figure.  Below are code examples for each of the three function calls.
+Finally, we can look at plots for the posterior credible intervals for group indices, single chemical weights, and corresponding posterior means.  To do this, we can use the functions `plot_weights()`, `plot_betas()`, and `plot_result()`.  `plot_results()` combines both plots generates by plot_weights and plot_betas into a side by side figure.  Below are code examples for each of the three function calls.
 
 ```{r}
 plot_betas(bgwqsr_fit)

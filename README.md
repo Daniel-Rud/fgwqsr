@@ -236,10 +236,10 @@ head(data)
 # Fitting using FGWQSR
 
 <br> From the FGWQSR package, the main function we will be using to fit
-models if the fgwqsr() function. The model formula that we specify will
-be different than traditional formulas in lm and glm, as we will need to
-denote our mixture groups. Three special characters are used in fgwqsr
-formulas: <br>
+models if the `fgwqsr()` function. The model formula that we specify
+will be different than traditional formulas in lm and glm, as we will
+need to denote our mixture groups. Three special characters are used in
+fgwqsr formulas: <br>
 
 - `|` - denotes the boundary of a mixture group, used to seperate
   chemicals within a mixture group.
@@ -253,7 +253,7 @@ formulas: <br>
   would denote this in the model formula by i.cat_var. This is similar
   to the stata syntax to declare categorical variables.
 
-<br> The fgwqsr() function has other options too: <br>
+<br> The `fgwqsr()` function has other options too: <br>
 
 - `data` - a data frame object containing variable columnames referenced
   in model formula (cat vars do not need to be named with i. in column
@@ -298,13 +298,13 @@ mod_formula = y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X12 +
 
 Notice that we did not use the `/` character since we did not include
 adjusting covariates. Now, we can fit the model using the function
-fgwqsr().
+`fgwqsr()`.
 
 ``` r
 fgwqsr_fit = fgwqsr(formula = mod_formula,
                     data = data,
                     quantiles = 5,
-                    n_mvn_sims = 100,
+                    n_mvn_sims = 10000,
                     verbose = T)
 #> 
 #> Fitting full model and nested models...
@@ -314,7 +314,7 @@ fgwqsr_fit = fgwqsr(formula = mod_formula,
 
 <br>
 
-We can see the model summary using the call summary()
+We can see the model summary using the call `summary()`
 
 ``` r
 
@@ -323,7 +323,7 @@ summary(fgwqsr_fit)
 #> Call: 
 #> FGWQSR with formula 'y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X12 + X13 + X14' on n = 10000 observations.
 #> 
-#> 100 samples used for simulated LRT distirbution.
+#> 10000 samples used for simulated LRT distirbution.
 #> 
 #> Log Likelihood: -5960.159 | AIC: 11950.32 | BIC: 12058.47
 #> 
@@ -331,7 +331,7 @@ summary(fgwqsr_fit)
 #> 
 #>                    Estimate        LRT P-value    
 #> Mixture Effect 1 -0.7023870 1168.18784  <2e-16 ***
-#> Mixture Effect 2  0.0246758    1.49567    0.57    
+#> Mixture Effect 2  0.0246758    1.49567  0.6118    
 #> Mixture Effect 3  0.4113445  408.88836  <2e-16 ***
 #> 
 #> Estimates and Inference for Weights
@@ -340,21 +340,21 @@ summary(fgwqsr_fit)
 #> X1       0.3055009 128.10791  <2e-16 ***
 #> X2       0.3364256 156.35067  <2e-16 ***
 #> X3       0.3223592 142.16491  <2e-16 ***
-#> X4       0.0236343   0.75019    0.21    
-#> X5       0.0120799   0.20227    0.35    
+#> X4       0.0236343   0.75019  0.1851    
+#> X5       0.0120799   0.20227  0.3291    
 #> -------------------------------------------------
 #>    Weight Estimate     LRT P-value
-#> X6        0.248205 0.10221    0.42
-#> X7        0.207174 0.07197    0.29
-#> X8        0.111892 0.02121    0.47
-#> X9        0.432729 0.30953    0.26
+#> X6        0.248205 0.10221  0.3806
+#> X7        0.207174 0.07197  0.3989
+#> X8        0.111892 0.02121  0.4397
+#> X9        0.432729 0.30953  0.2867
 #> -------------------------------------------------
 #>     Weight Estimate      LRT P-value    
 #> X10      0.24593511 26.93181  <2e-16 ***
 #> X11      0.31020577 43.50811  <2e-16 ***
 #> X12      0.37606638 62.98216  <2e-16 ***
-#> X13      0.00126201  0.00072    0.45    
-#> X14      0.06653073  2.05122    0.09 .  
+#> X13      0.00126201  0.00072  0.4911    
+#> X14      0.06653073  2.05122  0.0766 .  
 #> -------------------------------------------------
 #> 
 #> Estimates and Inference for Intercept and Adjusting Covariates
@@ -364,7 +364,7 @@ summary(fgwqsr_fit)
 #> 
 #> Significance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' 
 #> 
-#> Total runtime for FGWQSR:  1.31 minutes on 10 cores.
+#> Total runtime for FGWQSR:  1.53 minutes on 10 cores.
 ```
 
 <br> We can compare the true underlying group indices and chemical
@@ -415,7 +415,7 @@ group_index_frame; weight_frame
 # Fitting with Adjusting Continuous and Categorical Covariates
 
 As mentioned earlier, the `/` character in the model formula sent to
-fgwqsr() indicates that adjusting covariates follow this character.
+`fgwqsr()` indicates that adjusting covariates follow this character.
 Continuous characters can be referenced with their columnname from the
 dataset, while categorical variables need to be referenced using the
 prefix `i.`. We will illustrate this through an example where we create
@@ -465,7 +465,7 @@ head(data)
 ```
 
 <br> Now, we specify the formula to include the continuous and
-categorical variables and call fgwqsr().
+categorical variables and call `fgwqsr()`.
 
 ``` r
 
@@ -474,7 +474,7 @@ mod_formula_adj = y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X
 fgwqsr_fit_adj = fgwqsr(formula = mod_formula_adj,
                     data = data,
                     quantiles = 5,
-                    n_mvn_sims = 100,
+                    n_mvn_sims = 10000,
                     verbose = T)
 #> 
 #> Fitting full model and nested models...
@@ -482,8 +482,8 @@ fgwqsr_fit_adj = fgwqsr(formula = mod_formula_adj,
 #> Generating LRT distributions under H0...
 ```
 
-<br> Again, we use the function summary() to view the results of the
-fgwqsr() call.
+<br> Again, we use the function `summary()` to view the results of the
+`fgwqsr()` call.
 
 ``` r
 
@@ -492,7 +492,7 @@ summary(fgwqsr_fit_adj)
 #> Call: 
 #> FGWQSR with formula 'y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X12 + X13 + X14/weight + i.city' on n = 10000 observations.
 #> 
-#> 100 samples used for simulated LRT distirbution.
+#> 10000 samples used for simulated LRT distirbution.
 #> 
 #> Log Likelihood: -5556.169 | AIC: 11148.34 | BIC: 11278.12
 #> 
@@ -500,7 +500,7 @@ summary(fgwqsr_fit_adj)
 #> 
 #>                    Estimate       LRT P-value    
 #> Mixture Effect 1 -0.7219736 1153.2447  <2e-16 ***
-#> Mixture Effect 2  0.0708484   13.1311    0.01 ** 
+#> Mixture Effect 2  0.0708484   13.1311  0.0027 ** 
 #> Mixture Effect 3  0.4037247  375.4276  <2e-16 ***
 #> 
 #> Estimates and Inference for Weights
@@ -509,21 +509,21 @@ summary(fgwqsr_fit_adj)
 #> X1      0.36719961 178.32227  <2e-16 ***
 #> X2      0.28786631 110.03380  <2e-16 ***
 #> X3      0.33762099 150.47260  <2e-16 ***
-#> X4      0.00317254   0.01309    0.54    
-#> X5      0.00414055   0.02615    0.43    
+#> X4      0.00317254   0.01309  0.4562    
+#> X5      0.00414055   0.02615  0.4387    
 #> -------------------------------------------------
-#>    Weight Estimate     LRT P-value  
-#> X6       0.0279733 0.00981    0.53  
-#> X7       0.6527946 5.39774    0.02 *
-#> X8       0.1479473 0.28094    0.33  
-#> X9       0.1712847 0.36739    0.24  
+#>    Weight Estimate     LRT P-value   
+#> X6       0.0279733 0.00981  0.4669   
+#> X7       0.6527946 5.39774  0.0088 **
+#> X8       0.1479473 0.28094  0.2916   
+#> X9       0.1712847 0.36739  0.2688   
 #> -------------------------------------------------
 #>     Weight Estimate     LRT P-value    
 #> X10        0.318641 42.0794  <2e-16 ***
 #> X11        0.330624 45.7642  <2e-16 ***
 #> X12        0.350735 50.9094  <2e-16 ***
-#> X13        0.000000  0.0000    0.74    
-#> X14        0.000000  0.0000    0.78    
+#> X13        0.000000  0.0000  0.7526    
+#> X14        0.000000  0.0000  0.7440    
 #> -------------------------------------------------
 #> 
 #> Estimates and Inference for Intercept and Adjusting Covariates
@@ -536,7 +536,7 @@ summary(fgwqsr_fit_adj)
 #> 
 #> Significance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' 
 #> 
-#> Total runtime for FGWQSR:  1.28 minutes on 10 cores.
+#> Total runtime for FGWQSR:  1.55 minutes on 10 cores.
 ```
 
 <br>
@@ -597,12 +597,12 @@ group_index_frame; weight_frame; adj_cov_frame
 # Fitting Models with BGWQSR
 
 We also provide in this package functions to run BGWQSR models using the
-runjags package. The bgwqsr() function takes a model formulation similar
-to that in fgwqsr(), also utilizing the special characters “$|$”, “$/$”,
-and “i.”. Fitting the BGWQSR model using runjags allows us to leverage
-the “parallel” method in runjags that allows us to fit independent mcmc
-chains on multiple cores, speeding up fitting time. The bgwqsr()
-function takes several arguments:
+runjags package. The `bgwqsr()` function takes a model formulation
+similar to that in `fgwqsr()`, also utilizing the special characters
+“$|$”, “$/$”, and “i.”. Fitting the BGWQSR model using runjags allows us
+to leverage the “parallel” method in runjags that allows us to fit
+independent mcmc chains on multiple cores, speeding up fitting time. The
+`bgwqsr()` function takes several arguments:
 
 - `formula` A formula for model fitting of BGWQSR. Please see
   description for formula construction
@@ -637,15 +637,16 @@ function takes several arguments:
 bgwqsr_fit = bgwqsr(formula = mod_formula_adj,
                     data = data,
                     quantiles = 5,
-                    n.iter = 1000,
-                    n.burnin = 40,
-                    n.thin = 1, n.chains = 3,
-                    n.adapt = 10,
+                    n.iter = 5000,
+                    n.adapt = 1000,
+                    n.burnin = 4000,
+                    n.thin = 1, 
+                    n.chains = 3,
                     method = "parallel")
 #> Calling 3 simulations using the parallel method...
 #> Following the progress of chain 1 (the program will wait for all chains
 #> to finish before continuing):
-#> Welcome to JAGS 4.3.2 (official binary) on Tue Aug  8 11:37:26 2023
+#> Welcome to JAGS 4.3.2 (official binary) on Tue Aug  8 11:48:06 2023
 #> JAGS is free software and comes with ABSOLUTELY NO WARRANTY
 #> Loading module: basemod: ok
 #> Loading module: bugs: ok
@@ -660,14 +661,19 @@ bgwqsr_fit = bgwqsr(formula = mod_formula_adj,
 #>    Total graph size: 220906
 #> . Reading parameter file inits1.txt
 #> . Initializing model
-#> . Adapting 10
-#> Adaptation incomplete
-#> . Updating 40
-#> . . . . . . . . . . . . . . . . . . . . . . Updating 1000
+#> . Adapting 1000
 #> -------------------------------------------------| 1000
+#> ++++++++++++++++++++++++++++++++++++++++++++++++++ 100%
+#> Adaptation successful
+#> . Updating 4000
+#> -------------------------------------------------| 4000
+#> ************************************************** 100%
+#> . . . . . . . . . . . . . . . . . . . . . . Updating 5000
+#> -------------------------------------------------| 5000
 #> ************************************************** 100%
 #> . . . . Updating 0
 #> . Deleting model
+#> . 
 #> All chains have finished
 #> Simulation complete.  Reading coda files...
 #> Coda files loaded successfully
@@ -685,50 +691,50 @@ the summaries object from the bgwqsr model.
 
 ``` r
 bgwqsr_fit$model$summaries
-#>                      Lower95       Median    Upper95        Mean          SD
-#> B0              -3.53927e+00 -2.286090000 -1.0641100 -2.29514187 0.647188056
-#> B1              -7.71618e-01 -0.725594500 -0.6802950 -0.72600666 0.023281395
-#> B2               2.48170e-02  0.067183450  0.1064120  0.06682902 0.021013931
-#> B3               3.63396e-01  0.405669500  0.4482870  0.40549247 0.021815428
-#> phi_weight       1.58764e-02  0.034617100  0.0523520  0.03463890 0.009468406
-#> phi_city_city_2  5.93938e-02  0.189031000  0.3114370  0.18530513 0.062164651
-#> phi_city_city_3 -1.16995e+00 -1.046205000 -0.9372110 -1.04638597 0.060317104
-#> w1[1]            3.07839e-01  0.356152000  0.4095100  0.35625033 0.025842088
-#> w1[2]            2.24884e-01  0.275743500  0.3197080  0.27559688 0.024798637
-#> w1[3]            2.71770e-01  0.327315000  0.3735700  0.32706019 0.025610927
-#> w1[4]            1.33696e-03  0.020274100  0.0503198  0.02276905 0.014979708
-#> w1[5]            8.90119e-04  0.012926500  0.0481118  0.01832354 0.014410208
-#> w2[1]            3.09801e-04  0.086151500  0.4309210  0.12864506 0.135000798
-#> w2[2]            5.91988e-03  0.534381000  0.8665020  0.51481842 0.222855538
-#> w2[3]            4.83847e-03  0.195003500  0.5647470  0.23334274 0.175352329
-#> w2[4]            2.76834e-04  0.051014500  0.4825230  0.12319379 0.158556710
-#> w3[1]            2.22839e-01  0.307345000  0.3915540  0.30785762 0.043965458
-#> w3[2]            2.25217e-01  0.315857000  0.4047790  0.31716234 0.047938569
-#> w3[3]            2.51303e-01  0.338936500  0.4357180  0.33998408 0.048695172
-#> w3[4]            9.60607e-05  0.012377400  0.0486705  0.01700009 0.015804272
-#> w3[5]            4.23129e-05  0.009831325  0.0653361  0.01799586 0.021236808
+#>                      Lower95       Median    Upper95         Mean          SD
+#> B0              -3.55953e+00 -2.276720000 -1.0283500 -2.275379768 0.650708832
+#> B1              -7.64702e-01 -0.719984500 -0.6750940 -0.720023246 0.023129049
+#> B2               2.43882e-02  0.063798800  0.1027410  0.063877779 0.020061428
+#> B3               3.62746e-01  0.403310000  0.4467520  0.403459276 0.021539746
+#> phi_weight       1.63363e-02  0.034298300  0.0533688  0.034331094 0.009523326
+#> phi_city_city_2  5.61892e-02  0.184804000  0.3047710  0.182768681 0.062710814
+#> phi_city_city_3 -1.16835e+00 -1.047565000 -0.9282480 -1.047892656 0.061337646
+#> w1[1]            3.17797e-01  0.364260000  0.4143730  0.364787420 0.024960963
+#> w1[2]            2.35665e-01  0.286487000  0.3333490  0.285301347 0.025186564
+#> w1[3]            2.87736e-01  0.334223000  0.3871450  0.335004482 0.025512834
+#> w1[4]            4.67316e-06  0.001237860  0.0246056  0.005677800 0.009170378
+#> w1[5]            1.20274e-08  0.002457065  0.0372660  0.009228953 0.012728591
+#> w2[1]            4.14228e-10  0.041078900  0.4788060  0.116370796 0.162864586
+#> w2[2]            1.29628e-06  0.624149000  0.9633610  0.587280559 0.271118278
+#> w2[3]            1.05690e-08  0.057304000  0.5162620  0.138582464 0.176649803
+#> w2[4]            5.65709e-12  0.077993700  0.5557070  0.157766159 0.192020106
+#> w3[1]            2.21791e-01  0.313312000  0.3997690  0.313257346 0.046378414
+#> w3[2]            2.31606e-01  0.323696000  0.4093240  0.323749125 0.045768073
+#> w3[3]            2.50930e-01  0.344564500  0.4313960  0.345375698 0.046597560
+#> w3[4]            4.43939e-09  0.000338623  0.0298099  0.005102812 0.010909603
+#> w3[5]            8.11700e-09  0.003895090  0.0534459  0.012515001 0.019272539
 #>                 Mode        MCerr MC%ofSD SSeff       AC.10     psrf
-#> B0                NA 0.0253886867     3.9   650 0.135763520 1.017037
-#> B1                NA 0.0006931134     3.0  1128 0.032869224 1.002232
-#> B2                NA 0.0005784176     2.8  1320 0.056233169 1.015088
-#> B3                NA 0.0005686181     2.6  1472 0.004884026 1.004865
-#> phi_weight        NA 0.0003693389     3.9   657 0.137666665 1.013025
-#> phi_city_city_2   NA 0.0024062599     3.9   667 0.093881308 1.055444
-#> phi_city_city_3   NA 0.0019781051     3.3   930 0.027895352 1.005674
-#> w1[1]             NA 0.0014317339     5.5   326 0.160912107 1.009568
-#> w1[2]             NA 0.0013968559     5.6   315 0.133037467 1.016247
-#> w1[3]             NA 0.0013598875     5.3   355 0.095049596 1.008427
-#> w1[4]             NA 0.0024807777    16.6    36 0.772736549 1.395213
-#> w1[5]             NA 0.0036835894    25.6    15 0.881665667 1.098312
-#> w2[1]             NA 0.0239360536    17.7    32 0.802805171 1.654769
-#> w2[2]             NA 0.0380533511    17.1    34 0.787361353 1.194114
-#> w2[3]             NA 0.0277237983    15.8    40 0.760532625 1.159015
-#> w2[4]             NA 0.0289947421    18.3    30 0.849374376 1.585827
-#> w3[1]             NA 0.0027343913     6.2   259 0.186245077 1.010975
-#> w3[2]             NA 0.0032666415     6.8   215 0.227136444 1.034784
-#> w3[3]             NA 0.0033133871     6.8   216 0.229120984 1.006265
-#> w3[4]             NA 0.0028756431    18.2    30 0.780826653 1.977867
-#> w3[5]             NA 0.0046767564    22.0    21 0.873804267 1.676826
+#> B0                NA 0.0082515822     1.3  6219 -0.01139764 1.000612
+#> B1                NA 0.0003067155     1.3  5686  0.02241502 1.003575
+#> B2                NA 0.0003307206     1.6  3680  0.03215104 1.000577
+#> B3                NA 0.0002554598     1.2  7109  0.01314732 1.001226
+#> phi_weight        NA 0.0001208651     1.3  6208 -0.01136061 1.000667
+#> phi_city_city_2   NA 0.0011363738     1.8  3045  0.04350143 1.002126
+#> phi_city_city_3   NA 0.0007947998     1.3  5956  0.02044460 1.002386
+#> w1[1]             NA 0.0005929627     2.4  1772  0.12109597 1.003249
+#> w1[2]             NA 0.0006897405     2.7  1333  0.17982929 1.002824
+#> w1[3]             NA 0.0006291969     2.5  1644  0.13771012 1.005385
+#> w1[4]             NA 0.0012760718    13.9    52  0.92248005 1.059874
+#> w1[5]             NA 0.0011808103     9.3   116  0.81084375 1.437260
+#> w2[1]             NA 0.0073209363     4.5   495  0.43945505 1.076159
+#> w2[2]             NA 0.0119955601     4.4   511  0.50296560 1.007970
+#> w2[3]             NA 0.0072919715     4.1   587  0.40412282 1.012516
+#> w2[4]             NA 0.0079464512     4.1   584  0.44230763 1.078464
+#> w3[1]             NA 0.0011758463     2.5  1556  0.14172207 1.001253
+#> w3[2]             NA 0.0010971722     2.4  1740  0.09784172 1.000615
+#> w3[3]             NA 0.0011036589     2.4  1783  0.08664475 1.003781
+#> w3[4]             NA 0.0010633444     9.7   105  0.85131376 2.129302
+#> w3[5]             NA 0.0021647580    11.2    79  0.82699629 1.066294
 ```
 
 We can analyze the mixing of the markov chains and corresponding
@@ -763,10 +769,10 @@ plot(bgwqsr_fit$model$mcmc) # combines traceplot() and densplot()
 
 Finally, we can look at plots for the posterior credible intervals for
 group indices, single chemical weights, and corresponding posterior
-means. To do this, we can use the functions plot_weights(),
-plot_betas(), and plot_result(). plot_results() combines both plots
-generates by plot_weights and plot_betas into a side by side figure.
-Below are code examples for each of the three function calls.
+means. To do this, we can use the functions `plot_weights()`,
+`plot_betas()`, and `plot_result()`. `plot_results()` combines both
+plots generates by plot_weights and plot_betas into a side by side
+figure. Below are code examples for each of the three function calls.
 
 ``` r
 plot_betas(bgwqsr_fit)
