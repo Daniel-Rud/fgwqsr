@@ -1316,6 +1316,9 @@ perform_inference = function(ll_models, params_logistic_form, vars,cov_mat,
     return( sum( lrts_FG[i] <= lrt_dists[[i]]) / num_sims )
   })
 
+  # make sure values in lrt_dists are not numerically negative, make them 0
+  lrt_dists = lapply(lrt_dists, FUN = function(x) ifelse(x < 0, 0, x))
+
 
   # perform inference on intercept and confounders
 
