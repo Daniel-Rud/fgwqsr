@@ -1309,16 +1309,15 @@ perform_inference = function(ll_models, params_logistic_form, vars,cov_mat,
   # make sure numerically negative LRTs are set to 0
   lrts_FG = ifelse(lrts_FG < 0,0, lrts_FG)
 
+  # make sure values in lrt_dists are not numerically negative, make them 0
+  lrt_dists = lapply(lrt_dists, FUN = function(x) ifelse(x < 0, 0, x))
+
   # get pvalues for SPLRTs and 1 group LRTs
 
   pvals_polls = sapply(1:nrow(inference_order), FUN = function(i)
     {
     return( sum( lrts_FG[i] <= lrt_dists[[i]]) / num_sims )
   })
-
-  # make sure values in lrt_dists are not numerically negative, make them 0
-  lrt_dists = lapply(lrt_dists, FUN = function(x) ifelse(x < 0, 0, x))
-
 
   # perform inference on intercept and confounders
 
