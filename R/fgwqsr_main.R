@@ -845,7 +845,7 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
 
   } else if(sum(data[f[2]]) / nrow(data) < .05)
   {
-    warning("Case control ratio is extremely unproportional.  Less than 5% of observations are cases.  Proceed with caution.")
+    message("Case control ratio is extremely unproportional.  Less than 5% of observations are cases.  Proceed with caution.")
   }
 
   # check if variables in formula are in dataframe
