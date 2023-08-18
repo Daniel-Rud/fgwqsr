@@ -699,7 +699,7 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
                           optim_control_list = optim_control_list)
       if(verbose == TRUE)
       {
-        p(paste("Fitted Model ", x, " of ", length(formulas), sep = ""))
+        p()
       }
     }else # if LRT for weights, return LL
     {
@@ -712,7 +712,7 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
 
       if(verbose == TRUE)
       {
-        p(paste("Fitted Model ", x, " of ", length(formulas), sep = ""))
+        p()
       }
     }
     return(result)
