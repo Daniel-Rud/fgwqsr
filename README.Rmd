@@ -84,12 +84,12 @@ To begin, let us generate some data to use.  We will have 14 underlying chemical
 
 We will use a fixed correlation structure such that the correlation of chemicals within a group is .7 and the cross correlations between 2 chemicals in different groups is .5. 
 <br>
-We first define ESS and CCS. ESS is a list that contains the the sample size and the true underlying weight distribution of the chemicals in each group.  CCS is a two element vector where the first index defines the within group correlation and the second index controls the between group correlation.  The sample size for our dataset is fixed to $n = 100,000$ and we set the distribution of the true underlying weights as follows: 
+We first define ESS and CCS. ESS is a list that contains the the sample size and the true underlying weight distribution of the chemicals in each group.  CCS is a two element vector where the first index defines the within group correlation and the second index controls the between group correlation.  The sample size for our dataset is fixed to $n = 10,000$ and we set the distribution of the true underlying weights as follows: 
 
 <br>
 We set the group index effects for the three groups as follows (in OR scale): $\exp(\gamma_1) = .5$, $\exp(\gamma_2) = 1$, $\exp(\gamma_3) = 1.5$
 ```{r}
-n = 100000
+n = 10000
 
 gamma = log(c(.5,1,1.5)) # group index sizes in log odds scale
 
@@ -151,7 +151,7 @@ corr %>% data.frame # for viewing
 
 We generate our exposure data based on the derived correlation structure.  We will use 5 quantiles, as that is the default for FGWQSR.  
 ```{r}
-set.seed(2023) # for reproducibility
+set.seed(11) # for reproducibility
 chem_data = mvtnorm::rmvnorm(n, mean = rep(0, 14), sigma = corr)
 ```
 <br>
@@ -290,7 +290,7 @@ As mentioned earlier, the `/` character in the model formula sent to `fgwqsr()` 
 <br>
 
 ```{r}
-set.seed(2023)
+set.seed(111)
 # create adjusting covariates
 weight = rnorm(n = n, mean = 68, sd = 2.5)
 city = sample(c("city_1", "city_2", "city_3"), size = n, replace = T)
