@@ -1236,9 +1236,18 @@ perform_inference = function(ll_models, params_logistic_form, vars,cov_mat,
   inference_order[1:num_pollutants,2] = sapply(num_in_each_group, FUN = function(x) 1:x ) %>% unlist
   # group effects are NA
 
-  # perform inference on single pollutant and group effects
+  # get LRT statistics from FGWQSR
+  # first ll is full model, all other ll's are sub models
+  lrts_FG = -2*(ll_models[-1] -ll_models[1])
 
+  # make sure numerically negative LRTs are set to 0
+  lrts_FG = ifelse(lrts_FG < 0,0, lrts_FG)
+
+  # perform inference on single pollutant and group effects
   lrt_dists = vector(mode = "list", length = nrow(inference_order))
+
+  # set a threshold for when LRT simulated distributions will not be computed
+  LRT_threshold = 1E-8
 
   # run models in parallel, verbose option
 
@@ -1250,7 +1259,14 @@ perform_inference = function(ll_models, params_logistic_form, vars,cov_mat,
 
     for(i in 1: nrow(inference_order))
     {
+      # if a LRT is less than a threshold, do not waste time computing LRT
+      # distirbution
+      if(lrts_FG[i] <  LRT_threshold)
+      {
+        lrt_dists[[i]] = Inf
 
+      }else
+      {
       pollutant_num = inference_order[i,2]
       null_effects = MLE_effects
 
@@ -1264,13 +1280,14 @@ perform_inference = function(ll_models, params_logistic_form, vars,cov_mat,
         group_num = inference_order[i,1]
         null_effects[[group_num]][pollutant_num] = 0
       }
-      # perform the MVN LRT simulations
-      lrt_dists[[i]] = mvn_lrt_simulation(effects = null_effects, cov_mat = pollutant_cov_mat,
-                                          group_num = inference_order[i,1],
-                                          pollutant_num =  pollutant_num,
-                                          num_sims = num_sims,
-                                          zero_threshold_cutoff = zero_threshold_cutoff,
-                                          cores = cores)
+        lrt_dists[[i]] = mvn_lrt_simulation(effects = null_effects, cov_mat = pollutant_cov_mat,
+                                            group_num = inference_order[i,1],
+                                            pollutant_num =  pollutant_num,
+                                            num_sims = num_sims,
+                                            zero_threshold_cutoff = zero_threshold_cutoff,
+                                            cores = cores)
+
+      }
       p()
     }
 
@@ -1279,44 +1296,53 @@ perform_inference = function(ll_models, params_logistic_form, vars,cov_mat,
     for(i in 1: nrow(inference_order))
     {
 
-      pollutant_num = inference_order[i,2]
-      null_effects = MLE_effects
+      # if a LRT is less than a threshold, do not waste time computing LRT
+      # distribution
+      if(lrts_FG[i] <  LRT_threshold)
+      {
+        lrt_dists[[i]] = Inf
 
-      # if one group LRT, simulate with group effects being null
-      if(is.na(pollutant_num))
+      }else
       {
-        group_num = inference_order[i,1]
-        null_effects[[group_num]] = rep(0, num_in_each_group[group_num])
-      }else # if SPLRT, set pollutant effect to 0
-      {
-        group_num = inference_order[i,1]
-        null_effects[[group_num]][pollutant_num] = 0
+        pollutant_num = inference_order[i,2]
+        null_effects = MLE_effects
+
+        # if one group LRT, simulate with group effects being null
+        if(is.na(pollutant_num))
+        {
+          group_num = inference_order[i,1]
+          null_effects[[group_num]] = rep(0, num_in_each_group[group_num])
+        }else # if SPLRT, set pollutant effect to 0
+        {
+          group_num = inference_order[i,1]
+          null_effects[[group_num]][pollutant_num] = 0
+        }
+        lrt_dists[[i]] = mvn_lrt_simulation(effects = null_effects, cov_mat = pollutant_cov_mat,
+                                            group_num = inference_order[i,1],
+                                            pollutant_num =  pollutant_num,
+                                            num_sims = num_sims,
+                                            zero_threshold_cutoff = zero_threshold_cutoff,
+                                            cores = cores)
       }
-
-      lrt_dists[[i]] = mvn_lrt_simulation(effects = null_effects, cov_mat = pollutant_cov_mat,
-                                group_num = inference_order[i,1],
-                                pollutant_num =  pollutant_num,
-                                num_sims = num_sims,
-                                zero_threshold_cutoff = zero_threshold_cutoff,
-                                cores = cores)
     }
   }
 
-  # get LRT statistics from FGWQSR
-  # first ll is full model, all other ll's are sub models
-  lrts_FG = -2*(ll_models[-1] -ll_models[1])
-
-  # make sure numerically negative LRTs are set to 0
-  lrts_FG = ifelse(lrts_FG < 0,0, lrts_FG)
-
   # make sure values in lrt_dists are not numerically negative, make them 0
-  lrt_dists = lapply(lrt_dists, FUN = function(x) ifelse(x < 0, 0, x))
+  lrt_dists = lapply(lrt_dists, FUN = function(x) ifelse(x != Inf & (x < 0), 0, x))
 
   # get pvalues for SPLRTs and 1 group LRTs
 
   pvals_polls = sapply(1:nrow(inference_order), FUN = function(i)
     {
-    return( sum( lrts_FG[i] <= lrt_dists[[i]]) / num_sims )
+    pvalue = 0
+    if(lrt_dists[[i]][1] == Inf)
+    {
+      pvalue = 1
+    }else
+    {
+      pvalue = sum( lrts_FG[i] <= lrt_dists[[i]]) / num_sims
+    }
+    return( pvalue )
   })
 
   # perform inference on intercept and confounders

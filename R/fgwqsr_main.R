@@ -178,147 +178,147 @@ get_formulas= function(vars,formula)
 }
 
 
-create_likelihood_string = function(data, vars)
-{
-  ### Beta formulation##########################################################
-
-  beta_string = "B[1]"
-
-  beta_index = 2 # to hold value where group index effect is in vector
-
-  num_mixes = length(vars$mixture) # number of mixtures
-
-  beta_orders_mix = character(1+length(unlist(vars$mixture)))
-
-  beta_orders_mix[1] = "constant"
-
-  for(i in 1: length(vars$mixture)) # iterate over number of mixtures
-  {
-    num_elements = length(vars$mixture[[i]])
-
-    group_string = ""
-
-    if(num_elements>1) # if more than 1 element in mixture group
-    {
-      coef_denoms = paste("(1 + ", paste("exp(", paste("B[", (beta_index+1):(beta_index+num_elements -1),"]",
-                                                       sep = ""), ")", sep = "", collapse = " + "),")", sep = "") # denominators of coefs
-
-      coef_nums = c(paste("exp(B[", (beta_index+1):(beta_index+num_elements - 1),"])",
-                          sep = ""), "1") # numerators of coefficients
-
-      coeffs = paste("(",coef_nums, "/", coef_denoms, ")", sep = "") # vector of weight coefficient strings
-
-      quant_vars = paste("data$", vars$mixture[[i]], "[i]", sep = "")
-
-      group_string = paste("B[", beta_index, "]*(", paste(coeffs, quant_vars, sep = "*", collapse = " + "),
-                           ")", sep = "")
-
-      beta_string = paste(beta_string, group_string, sep = " + ")
-
-      beta_orders_mix[beta_index:(beta_index+num_elements -1)] = c(
-        paste("B_mix_", i, sep = ""), paste("alpha_", vars$mixture[[i]][-length(vars$mixture[[i]])], sep = ""))
-
-    }else # if one element in mixture group, weight is 1
-    {
-      quant_vars = paste("data$", vars$mixture[[i]], "[i]", sep = "")
-
-      group_string = paste("B[", beta_index, "]*",quant_vars, sep = "")
-
-      beta_string = paste(beta_string, group_string, sep = " + ")
-
-      beta_orders_mix[beta_index:(beta_index+num_elements -1)] = paste("B_mix_", i, sep = "")
-    }
-
-    beta_index = beta_index + length(vars$mixture[[i]])
-  }
-
-  ### For Phis #################################################################
-
-  phi_start_index = beta_index
-
-  length1 = length(vars$continuous)
-
-  length2 = length(vars$categorical)
-
-  phi1 = c()
-
-  if(length1>0)
-  {
-    for(i in 1: length1)
-    {
-      phi1[i] = paste(vars$continuous[i], sep = "")
-    }
-  }
-
-  phi2 = list()
-
-  if(length2>0)
-  {
-    for(i in 1:length2)
-    {
-      varName = vars$categorical[i]
-
-      names = names(data)[which(substr(names(data), 1, nchar(varName)+1) ==
-                                  paste(varName, "_", sep = ""))]
-      phi2[[i]] = paste(names, sep= "")
-
-    }
-  }
-
-  phis = c(phi1, unlist(phi2))
-
-  phi_betas = c()
-
-  if(length(phis)>0) # if confounders, add betas
-  {
-    phi_betas = paste("B[", (phi_start_index):(phi_start_index + length(phis) -1), "]", sep = "")
-  }
-
-
-  order_of_betas = c(beta_orders_mix, phis)
-
-
-
-  phiString = c()
-
-  if(length(phis)>0)
-    phiString = paste(" + ", paste(phi_betas, "*", "data$", phis,"[i]", sep = "", collapse = " + "))
-
-  mixString = paste(beta_string, phiString, sep = "")
-
-  return(list(mixString=mixString, order_of_betas=order_of_betas, numPhis = length(phis)))
-}
-
-make_beta_vec = function(B, vars)
-{
-  # we organize into a list, then perform the reparameterization
-
-  mix_sizes = sapply(vars$mixture, length) # sizes of mixture groups
-  num_mixes = vars$mixture %>% length # number of mixtures
-
-  current_index = 2 # 1st index is constant
-
-  for(i in 1:num_mixes) # iterate of number of mixtures
-  {
-    # if mix_size is 1, just leave param for unconstrained optimization
-    if(mix_sizes[i] != 1)
-    {
-      # where is the group effect
-      group_effect = B[current_index]
-      # where are the alphas -- the 0 is so that exp(0) = 1 for last group
-      alphas = c(B[(current_index+1):(current_index + mix_sizes[i] - 1)], 0)
-
-      # reparameterize the beta vector
-      B[current_index:(current_index + mix_sizes[i] - 1)] =
-        (group_effect*exp(alphas)) / (exp(alphas) %>% sum)
-    }
-
-    # change the current index for next iteration
-    current_index = current_index + mix_sizes[i]
-  }
-  return(B)
-}
-
+# create_likelihood_string = function(data, vars)
+# {
+#   ### Beta formulation##########################################################
+#
+#   beta_string = "B[1]"
+#
+#   beta_index = 2 # to hold value where group index effect is in vector
+#
+#   num_mixes = length(vars$mixture) # number of mixtures
+#
+#   beta_orders_mix = character(1+length(unlist(vars$mixture)))
+#
+#   beta_orders_mix[1] = "constant"
+#
+#   for(i in 1: length(vars$mixture)) # iterate over number of mixtures
+#   {
+#     num_elements = length(vars$mixture[[i]])
+#
+#     group_string = ""
+#
+#     if(num_elements>1) # if more than 1 element in mixture group
+#     {
+#       coef_denoms = paste("(1 + ", paste("exp(", paste("B[", (beta_index+1):(beta_index+num_elements -1),"]",
+#                                                        sep = ""), ")", sep = "", collapse = " + "),")", sep = "") # denominators of coefs
+#
+#       coef_nums = c(paste("exp(B[", (beta_index+1):(beta_index+num_elements - 1),"])",
+#                           sep = ""), "1") # numerators of coefficients
+#
+#       coeffs = paste("(",coef_nums, "/", coef_denoms, ")", sep = "") # vector of weight coefficient strings
+#
+#       quant_vars = paste("data$", vars$mixture[[i]], "[i]", sep = "")
+#
+#       group_string = paste("B[", beta_index, "]*(", paste(coeffs, quant_vars, sep = "*", collapse = " + "),
+#                            ")", sep = "")
+#
+#       beta_string = paste(beta_string, group_string, sep = " + ")
+#
+#       beta_orders_mix[beta_index:(beta_index+num_elements -1)] = c(
+#         paste("B_mix_", i, sep = ""), paste("alpha_", vars$mixture[[i]][-length(vars$mixture[[i]])], sep = ""))
+#
+#     }else # if one element in mixture group, weight is 1
+#     {
+#       quant_vars = paste("data$", vars$mixture[[i]], "[i]", sep = "")
+#
+#       group_string = paste("B[", beta_index, "]*",quant_vars, sep = "")
+#
+#       beta_string = paste(beta_string, group_string, sep = " + ")
+#
+#       beta_orders_mix[beta_index:(beta_index+num_elements -1)] = paste("B_mix_", i, sep = "")
+#     }
+#
+#     beta_index = beta_index + length(vars$mixture[[i]])
+#   }
+#
+#   ### For Phis #################################################################
+#
+#   phi_start_index = beta_index
+#
+#   length1 = length(vars$continuous)
+#
+#   length2 = length(vars$categorical)
+#
+#   phi1 = c()
+#
+#   if(length1>0)
+#   {
+#     for(i in 1: length1)
+#     {
+#       phi1[i] = paste(vars$continuous[i], sep = "")
+#     }
+#   }
+#
+#   phi2 = list()
+#
+#   if(length2>0)
+#   {
+#     for(i in 1:length2)
+#     {
+#       varName = vars$categorical[i]
+#
+#       names = names(data)[which(substr(names(data), 1, nchar(varName)+1) ==
+#                                   paste(varName, "_", sep = ""))]
+#       phi2[[i]] = paste(names, sep= "")
+#
+#     }
+#   }
+#
+#   phis = c(phi1, unlist(phi2))
+#
+#   phi_betas = c()
+#
+#   if(length(phis)>0) # if confounders, add betas
+#   {
+#     phi_betas = paste("B[", (phi_start_index):(phi_start_index + length(phis) -1), "]", sep = "")
+#   }
+#
+#
+#   order_of_betas = c(beta_orders_mix, phis)
+#
+#
+#
+#   phiString = c()
+#
+#   if(length(phis)>0)
+#     phiString = paste(" + ", paste(phi_betas, "*", "data$", phis,"[i]", sep = "", collapse = " + "))
+#
+#   mixString = paste(beta_string, phiString, sep = "")
+#
+#   return(list(mixString=mixString, order_of_betas=order_of_betas, numPhis = length(phis)))
+# }
+#
+# make_beta_vec = function(B, vars)
+# {
+#   # we organize into a list, then perform the reparameterization
+#
+#   mix_sizes = sapply(vars$mixture, length) # sizes of mixture groups
+#   num_mixes = vars$mixture %>% length # number of mixtures
+#
+#   current_index = 2 # 1st index is constant
+#
+#   for(i in 1:num_mixes) # iterate of number of mixtures
+#   {
+#     # if mix_size is 1, just leave param for unconstrained optimization
+#     if(mix_sizes[i] != 1)
+#     {
+#       # where is the group effect
+#       group_effect = B[current_index]
+#       # where are the alphas -- the 0 is so that exp(0) = 1 for last group
+#       alphas = c(B[(current_index+1):(current_index + mix_sizes[i] - 1)], 0)
+#
+#       # reparameterize the beta vector
+#       B[current_index:(current_index + mix_sizes[i] - 1)] =
+#         (group_effect*exp(alphas)) / (exp(alphas) %>% sum)
+#     }
+#
+#     # change the current index for next iteration
+#     current_index = current_index + mix_sizes[i]
+#   }
+#   return(B)
+# }
+#
 reparam_GI_weights = function(B, vars)
 {
   # we organize into a list, then perform the reparameterization
@@ -356,51 +356,52 @@ reparam_GI_weights = function(B, vars)
   return(reparam)
 }
 
-get_optimization_region = function(logistic_param, vars)
-{
-  mix_sizes = sapply(vars$mixture, length) # sizes of mixture groups
-  num_mixes = vars$mixture %>% length # number of mixtures
+#
+# get_optimization_region = function(logistic_param, vars)
+# {
+#   mix_sizes = sapply(vars$mixture, length) # sizes of mixture groups
+#   num_mixes = vars$mixture %>% length # number of mixtures
+#
+#   current_index = 2 # 1st index is constant
+#
+#   optimization_lower = rep(-Inf, logistic_param %>% length)
+#   optimization_upper = rep(Inf, logistic_param %>% length)
+#
+#   for(i in 1:num_mixes) # iterate of number of mixtures
+#   {
+#     # find location of indices for each mixture group
+#     group_indices = current_index: (current_index + mix_sizes[i] - 1)
+#     # find the sign of the group
+#     group_sign = sign(logistic_param[group_indices]) %>% sum
+#
+#     if(group_sign > 0)
+#     {
+#       optimization_lower[group_indices] = 0
+#       optimization_upper[group_indices] = Inf
+#     }else
+#     {
+#       optimization_lower[group_indices] = -Inf
+#       optimization_upper[group_indices] = 0
+#     }
+#
+#     # change the current index for next iteration
+#     current_index = current_index + mix_sizes[i]
+#   }
+#   return(list(optimization_lower = optimization_lower,
+#               optimization_upper = optimization_upper))
+# }
+#
+# fgwqsr_ll = function(B,design_matrix, y_vec, vars) # log likelihood
+# {
+#   B_logistic = make_beta_vec(B,vars) # to evaluate special Beta vector
+#
+#   ll = logistic_neg_ll(B_logistic,design_matrix, y_vec)
+#   # will return negative of log likelihood -- what we need for optim
+#
+#   return(ll)
+# }
 
-  current_index = 2 # 1st index is constant
-
-  optimization_lower = rep(-Inf, logistic_param %>% length)
-  optimization_upper = rep(Inf, logistic_param %>% length)
-
-  for(i in 1:num_mixes) # iterate of number of mixtures
-  {
-    # find location of indices for each mixture group
-    group_indices = current_index: (current_index + mix_sizes[i] - 1)
-    # find the sign of the group
-    group_sign = sign(logistic_param[group_indices]) %>% sum
-
-    if(group_sign > 0)
-    {
-      optimization_lower[group_indices] = 0
-      optimization_upper[group_indices] = Inf
-    }else
-    {
-      optimization_lower[group_indices] = -Inf
-      optimization_upper[group_indices] = 0
-    }
-
-    # change the current index for next iteration
-    current_index = current_index + mix_sizes[i]
-  }
-  return(list(optimization_lower = optimization_lower,
-              optimization_upper = optimization_upper))
-}
-
-fgwqsr_ll = function(B,design_matrix, y_vec, vars) # log likelihood
-{
-  B_logistic = make_beta_vec(B,vars) # to evaluate special Beta vector
-
-  ll = logistic_neg_ll(B_logistic,design_matrix, y_vec, vars)
-  # will return negative of log likelihood -- what we need for optim
-
-  return(ll)
-}
-
-logistic_neg_ll = function(B,design_matrix, y_vec, vars) # log likelihood
+logistic_neg_ll = function(B,design_matrix, y_vec) # log likelihood
 {
   lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1))
 
@@ -422,7 +423,7 @@ logistic_neg_ll = function(B,design_matrix, y_vec, vars) # log likelihood
 #   return(-1*ll) # -1 is for optim call
 # }
 
-logistic_neg_gr = function(B,design_matrix, y_vec, vars)
+logistic_neg_gr = function(B,design_matrix, y_vec)
 {
 
   gr = colSums(design_matrix * (c(y_vec - pracma::sigmoid(crossprod(t(design_matrix),B)))))
@@ -489,6 +490,102 @@ reparam_to_weights = function(ML_sol, vars)
   return(return_list)
 }
 
+# Hybrdized approach had problem -- weights that were estimated to be 0
+# had LRTS that were nonzero.  The reason this occurred was because
+# the initial optimization, in the reparameterization, was not converging
+# in a particular subregion for a group, and the LLs between full and nested
+# models when exluding a pollutant with weight 0 was nonzero.
+# fit_fgwqsr = function(formula, data, quantiles, output_hessian = F,
+#                       initial_cov_vals, return_y = F, return_data = F,
+#                       optim_control_list)
+# {
+#   f = as.character(formula)
+#
+#   f[3] = gsub("\n", "", f[3])
+#
+#   y = f[2]
+#
+#   vars = clean_vars(f[3])
+#
+#   # this dataset is modified locally.  Different LRT formulas specify exclusion
+#   # of different variables from the dataframe.  Each local data is built to
+#   # have the data organized such that it can be called in likelihood function.
+#   data = data[, c(y, unlist(vars))]
+#
+#   if(length(vars$categorical)>0) # if there are categorical variables
+#   {
+#     data = fastDummies::dummy_cols(data, select_columns = vars$categorical, remove_first_dummy = TRUE,
+#                       remove_selected_columns = TRUE) # add dummy variables
+#   }
+#
+#   data = quantize_vars(data,vars, quantiles) # quantize mixture components
+#
+#   # create likelihood model for ML
+#
+#   num_confounders = ncol(data) - unlist(vars$mixture)%>%length -1 # -1 for outcome y column
+#
+#   initial_vals =  rep(0, ncol(data))# also accounts for constant
+#
+#   initial_vals[1] = initial_cov_vals$intercept_est # intercept estimate
+#
+#   if(num_confounders > 0)
+#   {
+#     initial_vals[(ncol(data) - num_confounders + 1):ncol(data)] =
+#       initial_cov_vals$confounder_ests
+#   }
+#   # this is for likelihood ratio test
+#
+#   y_vec = data[,1] # y outcome vector to send to likelihood, will always be first col
+#   design_matrix = cbind(rep(1, nrow(data)), data[, -1]) %>% as.matrix # the first column of data has y value
+#
+#   # first perform a few initial iterations in reparameterization
+#
+#   ML_sol = stats::optim(par = initial_vals,
+#                  fn = fgwqsr_ll,
+#                  design_matrix = design_matrix,
+#                  y_vec = y_vec,
+#                  vars = vars,
+#                  method = "BFGS",
+#                  control = list(maxit = 1000,
+#                                 factr = 1E-14,
+#                                 reltol = 1E-20#,
+#                                 #fnscale = fnscale
+#                  ))
+#
+#   # now we extract the ML_sol and run using optim LBFGS for precise likelihood estimate
+#
+#   # ML solution in logistic parameterization
+#   ML_sol_logistic_param = make_beta_vec(ML_sol$par, vars)
+#
+#   optimization_region = get_optimization_region(ML_sol_logistic_param, vars)
+#
+#   initial_vals = ML_sol_logistic_param
+#
+#   final_fit = stats::optim(par = initial_vals,
+#                     fn = logistic_neg_ll,
+#                     gr = logistic_neg_gr,
+#                     design_matrix = design_matrix,
+#                     y_vec = y_vec,
+#                     method = "L-BFGS-B",
+#                     lower = optimization_region$optimization_lower,
+#                     upper = optimization_region$optimization_upper,
+#                     control = optim_control_list)
+#
+#   return_list = list(ML_sol= final_fit, vars = vars)
+#
+#   # return y and new data only for fist FG formula.
+#
+#   if(return_y == T)
+#   {
+#     return_list[["y"]] = y_vec
+#   }
+#   if(return_data == T)
+#   {
+#     return_list[["new_data"]] = data
+#   }
+#   return(return_list)
+# }
+
 
 fit_fgwqsr = function(formula, data, quantiles, output_hessian = F,
                       initial_cov_vals, return_y = F, return_data = F,
@@ -510,7 +607,7 @@ fit_fgwqsr = function(formula, data, quantiles, output_hessian = F,
   if(length(vars$categorical)>0) # if there are categorical variables
   {
     data = fastDummies::dummy_cols(data, select_columns = vars$categorical, remove_first_dummy = TRUE,
-                      remove_selected_columns = TRUE) # add dummy variables
+                                   remove_selected_columns = TRUE) # add dummy variables
   }
 
   data = quantize_vars(data,vars, quantiles) # quantize mixture components
@@ -533,39 +630,30 @@ fit_fgwqsr = function(formula, data, quantiles, output_hessian = F,
   y_vec = data[,1] # y outcome vector to send to likelihood, will always be first col
   design_matrix = cbind(rep(1, nrow(data)), data[, -1]) %>% as.matrix # the first column of data has y value
 
-  # first perform a few initial iterations in reparameterization
 
-  ML_sol = stats::optim(par = initial_vals,
-                 fn = fgwqsr_ll,
-                 design_matrix = design_matrix,
-                 y_vec = y_vec,
-                 vars = vars,
-                 method = "BFGS",
-                 control = list(maxit = 200,
-                                factr = 1E-14,
-                                reltol = 1E-14#,
-                                #fnscale = fnscale
-                 ))
+  optimization_regions = generate_optimization_regions(vars = vars,
+                                                       num_confounders = num_confounders)
 
-  # now we extract the ML_sol and run using optim LBFGS for precise likelihood estimate
+  fits = vector(mode = "list", length = length(optimization_regions))
 
-  # ML solution in logistic parameterization
-  ML_sol_logistic_param = make_beta_vec(ML_sol$par, vars)
+  # iterate over subregions -- no hybridized approach -- ensures correct ll optimization
+  for(i in 1: length(fits))
+  {
+    initial_vals = generate_initial_vals(optimization_regions[[i]]$lower,
+                                         optimization_regions[[i]]$upper)
 
-  optimization_region = get_optimization_region(ML_sol_logistic_param, vars)
+    fits[[i]] = stats::optim(par = initial_vals,
+                             fn = logistic_neg_ll,
+                             gr = logistic_neg_gr,
+                             design_matrix = design_matrix,
+                             y_vec = y_vec,
+                             method = "L-BFGS-B",
+                             lower = optimization_regions[[i]]$lower,
+                             upper = optimization_regions[[i]]$upper,
+                             control = optim_control_list)
+  }
 
-  initial_vals = ML_sol_logistic_param
-
-  final_fit = stats::optim(par = initial_vals,
-                    fn = logistic_neg_ll,
-                    gr = logistic_neg_gr,
-                    design_matrix = design_matrix,
-                    y_vec = y_vec,
-                    vars = vars,
-                    method = "L-BFGS-B",
-                    lower = optimization_region$optimization_lower,
-                    upper = optimization_region$optimization_upper,
-                    control = optim_control_list)
+  final_fit = fits[[which.min(sapply(fits, "[[", 2))]]
 
   return_list = list(ML_sol= final_fit, vars = vars)
 
@@ -589,6 +677,7 @@ generate_optimization_regions = function(vars, num_confounders)
   num_mixes = length(vars$mixture)
 
   num_in_each_group = sapply(vars$mixture, length)
+
 
   opt_list = apply(perms, MARGIN = 1, FUN = function(x)
   {
@@ -783,10 +872,6 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
   # get formula and vars object that stores info about model
   f = as.character(formula); vars = clean_vars(gsub("\n", "", f[3]))
 
-  # keep only relevant covariates in dataset -- this call is so we can check for
-  # complete cases
-  data = data[c(f[2], vars %>% unlist)]
-
   # perform initial checks ##################################################
   # check if formula
   if(!inherits(formula,"formula"))
@@ -803,6 +888,20 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
          columnames of the dataframe correspond to the variable
          names referenced in the model formula.")
   }
+
+  # check if variables in formula are in dataframe
+  all_vars = c(vars$mixture %>% unlist, vars$continuous, vars$categorical)
+
+  if( sum(all_vars %in% colnames(data)) != length(all_vars))
+  {
+    missing_vars = all_vars[which(!(all_vars %in% colnames(data)))]
+    stop(paste0("The following variable names included in the model formula are not included
+         as columnames in the passed `data` argument: ", paste(missing_vars, collapse = ", "), "."))
+  }
+
+  # keep only relevant covariates in dataset -- this call is so we can check for
+  # complete cases
+  data = data[c(f[2], vars %>% unlist)]
 
   # check to see if all observations have complete cases
   if(sum(stats::complete.cases(data)) != nrow(data))
@@ -848,15 +947,6 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
     message("Case control ratio is extremely unproportional.  Less than 5% of observations are cases.  Proceed with caution.")
   }
 
-  # check if variables in formula are in dataframe
-  all_vars = c(vars$mixture %>% unlist, vars$continuous, vars$categorical)
-
-  if( sum(all_vars %in% colnames(data)) != length(all_vars))
-  {
-    missing_vars = all_vars[which(!(all_vars %in% colnames(data)))]
-    stop(paste0("The following variable names included in the model formula are not included
-         as columnames in the passed `data` argument: ", paste(all_vars, collapse = ", "), "."))
-  }
 
   # check if quantiles variable is within reasonable range
 
