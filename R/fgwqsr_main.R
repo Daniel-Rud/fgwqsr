@@ -897,7 +897,7 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
 {
   if(verbose == TRUE) # call to progress
   {
-    p <- progressr::progressor(steps = length(formulas) -1)
+    p <- progressr::progressor(steps = length(formulas))
   }
 
   # get initial vals for intercept and adjusting covariates
@@ -909,11 +909,6 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
 
   # perform full model fit using multiple optim -- not hybridized!
 
-  if(verbose == TRUE) # call to progress
-  {
-    message("Fitting full model -- calculating initial values for nested models...")
-  }
-
   fits[[1]] = fit_fgwqsr_MO(formula = stats::formula(formulas[[1]]),
                             data = data,
                             quantiles = quantiles,
@@ -922,38 +917,54 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
                             optim_control_list = optim_control_list,
                             cores = cores)
 
+  if(verbose == T)
+  {
+    p()
+  }
+
   # From this first fit, get solution -- generate initial values for nested models
 
   full_mod_sol = fits[[1]]$ML_sol$par
+
+  # find which weights were estimated to be 0 -- do NOT waste time fitting
+  # SPLRT for chemicals with weights of 0
+
+  single_chem_effects = full_mod_sol[2: (2+sum(sapply(vars$mixture, length)) - 1)]
+
+  formulas[2:(2+sum(sapply(vars$mixture, length)) - 1)] = ifelse(single_chem_effects == 0, "0 weight",
+                                                                 formulas[2:(2+sum(sapply(vars$mixture, length)) - 1)] )
 
   # generate initial values for nested models -- initial values for chemicals too!
 
   initial_vals = generate_nested_initial_vals(full_mod_sol = full_mod_sol,
                                               vars = vars)
-  if(verbose == T)
-  {
-    message("\nFitting nested models...")
-  }
 
   future::plan(future::multisession, workers = cores)
 
   fits[2:length(formulas)] = future.apply::future_lapply(2:length(formulas), FUN = function(x)
   {
+    result = 0 # initialize
     # if only a 1 group LRT with only 1 mixture group in formula
     if((length(vars$mixture) == 1) && (x == (vars$mixture %>% unlist %>% length %>% sum(2))))
     {
       result = stats::glm(stats::formula(paste(formulas[x], "1")), data = data, family = "binomial") %>% stats::logLik
     }else # if either single pollutant LRT or 1 group LRT (more than 1 mixture group)
     {
-      result = -1*fit_fgwqsr_hybrid(stats::formula(formulas[x]), data, quantiles,
-                           initial_vals = initial_vals[[x-1]],
-                           optim_control_list = optim_control_list)$ML_sol$value
+      if(formulas[[x]] == "0 weight")
+      {
+        result = -1*fits[[1]]$ML_sol$value
+      }else
+      {
+        result = -1*fit_fgwqsr_hybrid(stats::formula(formulas[x]), data, quantiles,
+                                      initial_vals = initial_vals[[x-1]],
+                                      optim_control_list = optim_control_list)$ML_sol$value
+      }
     }
 
-      if(verbose == TRUE)
-      {
-        p()
-      }
+    if(verbose == TRUE)
+    {
+      p()
+    }
 
     return(result)
   })
@@ -1174,6 +1185,7 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
   if(verbose == TRUE)
   {
     progressr::handlers("progress")
+    message("Fitting full and nested FGWQSR models...")
     progressr::with_progress(fits <- fgwqsr_caller(formulas, data, quantiles,vars, verbose,
                                         cores, optim_control_list))
     message("\nGenerating LRT distributions under H0...")
