@@ -289,36 +289,141 @@ get_formulas= function(vars,formula)
 #   return(list(mixString=mixString, order_of_betas=order_of_betas, numPhis = length(phis)))
 # }
 #
-# make_beta_vec = function(B, vars)
-# {
-#   # we organize into a list, then perform the reparameterization
-#
-#   mix_sizes = sapply(vars$mixture, length) # sizes of mixture groups
-#   num_mixes = vars$mixture %>% length # number of mixtures
-#
-#   current_index = 2 # 1st index is constant
-#
-#   for(i in 1:num_mixes) # iterate of number of mixtures
-#   {
-#     # if mix_size is 1, just leave param for unconstrained optimization
-#     if(mix_sizes[i] != 1)
-#     {
-#       # where is the group effect
-#       group_effect = B[current_index]
-#       # where are the alphas -- the 0 is so that exp(0) = 1 for last group
-#       alphas = c(B[(current_index+1):(current_index + mix_sizes[i] - 1)], 0)
-#
-#       # reparameterize the beta vector
-#       B[current_index:(current_index + mix_sizes[i] - 1)] =
-#         (group_effect*exp(alphas)) / (exp(alphas) %>% sum)
-#     }
-#
-#     # change the current index for next iteration
-#     current_index = current_index + mix_sizes[i]
-#   }
-#   return(B)
-# }
-#
+make_beta_vec = function(B, vars)
+{
+  # we organize into a list, then perform the reparameterization
+
+  mix_sizes = sapply(vars$mixture, length) # sizes of mixture groups
+  num_mixes = vars$mixture %>% length # number of mixtures
+
+  current_index = 2 # 1st index is constant
+
+  for(i in 1:num_mixes) # iterate of number of mixtures
+  {
+    # if mix_size is 1, just leave param for unconstrained optimization
+    if(mix_sizes[i] > 1)
+    {
+      # where is the group effect
+      group_effect = B[current_index]
+      # where are the alphas -- the 0 is so that exp(0) = 1 for last group
+      alphas = c(B[(current_index+1):(current_index + mix_sizes[i] - 1)], 0)
+
+      # reparameterize the beta vector
+      B[current_index:(current_index + mix_sizes[i] - 1)] =
+        (group_effect*exp(alphas)) / (exp(alphas) %>% sum)
+    }
+
+    # change the current index for next iteration
+    current_index = current_index + mix_sizes[i]
+  }
+  return(B)
+}
+
+# generate initial values for nested models
+generate_nested_initial_vals = function(full_mod_sol, vars)
+{
+  # need to handle when there is a 1 group LRT
+
+  # full_mod_sol is organized as (intercept, chems, ..., adjusting covs)
+
+  # store initial values
+  num_formulas = length(vars$mixture) + sum(sapply(vars$mixture, length))
+  reparam_initial_vals = vector(mode = "list", length = num_formulas)
+
+  # first single pollutant initial values
+  run_ind = 1
+  for(i in 1: length(vars$mixture))
+  {
+    temp_vars = lapply(1:length(vars$mixture[[i]]),
+                       FUN = function(j)
+                       {
+                         v_temp = vars
+                         v_temp$mixture[[i]] = v_temp$mixture[[i]][-j]
+                         return(v_temp)
+                       })
+
+    exclude_index = (run_ind+1):(run_ind + length(vars$mixture[[i]]))
+
+    initial_vals= lapply(1:length(temp_vars), FUN = function(j)
+        {
+        return(full_mod_sol[-exclude_index[j]])
+      })
+
+    # reparameterize to multinomial parameterization
+
+    reparam_initial_vals[run_ind: (run_ind + length(vars$mixture[[i]]) -1)] =
+      lapply(1:length(temp_vars), FUN = function(j)
+      return(reparam_to_multinomial(initial_vals[[j]], temp_vars[[j]])))
+
+    # increment running indices
+    run_ind = run_ind + length(vars$mixture[[i]])
+  }
+
+  # add initial values for group LRTs
+  if(length(vars$mixture) > 1) # if more than 1 mixture group, then we can put initial values
+  {
+    counter = 2
+    for(i in 1:length(vars$mixture))
+    {
+      temp_vars = vars
+      temp_vars$mixture = temp_vars$mixture[-i]
+      exclude_index = counter:(counter + length(vars$mixture[[i]]) - 1)
+      reparam_initial_vals[[run_ind]] = reparam_to_multinomial(full_mod_sol[-exclude_index], temp_vars)
+      counter = counter + length(vars$mixture[[i]])
+      run_ind = run_ind + 1
+    }
+  }
+  return(reparam_initial_vals)
+}
+
+
+# this function is for the initial values of the nested models, for the hybridized fitting
+reparam_to_multinomial = function(B, temp_vars)
+{
+  num_groups = length(temp_vars$mixture)
+  num_in_each_group = sapply(temp_vars$mixture, length)
+
+  reparam = B # initialize
+
+  current_ind = 2
+  for(i in 1: num_groups)
+  {
+    # if only 1 in the group, leave for unconstrained optimziation
+    if(num_in_each_group[i] > 1)
+    # betas for group
+    betas = B[current_ind:(current_ind + num_in_each_group[i] -1)]
+    gamma = sum(betas)
+
+    # if there are numerically 0 values, need them to not be zero for reparameterization
+    if(gamma > 0) # if group effect is positive
+    {
+      betas = ifelse(betas == 0, 1E-4, betas)
+    }else # if group effect is negative
+    {
+      betas = ifelse(betas == 0, -1E-4, betas)
+    }
+
+    # recompute gamma
+    gamma = sum(betas)
+
+    # need to solve for alphas
+    # create matrix to solve system of equations
+    mat = matrix(data = 1, nrow = num_in_each_group[i] - 1,
+                 ncol = num_in_each_group[i] - 1)
+
+    diag(mat) = 1 - gamma/betas[-length(betas)]
+
+    # solve for alphas
+    alphas = solve(mat, rep(-1,num_in_each_group[i] - 1)) %>% log
+
+    # return (gamma, alphas) for group
+    reparam[current_ind:(current_ind + num_in_each_group[i] -1)] = c(gamma, alphas)
+    # increment counter
+    current_ind = current_ind + num_in_each_group[i]
+  }
+  return(reparam)
+}
+
 reparam_GI_weights = function(B, vars)
 {
   # we organize into a list, then perform the reparameterization
@@ -356,50 +461,50 @@ reparam_GI_weights = function(B, vars)
   return(reparam)
 }
 
-#
-# get_optimization_region = function(logistic_param, vars)
-# {
-#   mix_sizes = sapply(vars$mixture, length) # sizes of mixture groups
-#   num_mixes = vars$mixture %>% length # number of mixtures
-#
-#   current_index = 2 # 1st index is constant
-#
-#   optimization_lower = rep(-Inf, logistic_param %>% length)
-#   optimization_upper = rep(Inf, logistic_param %>% length)
-#
-#   for(i in 1:num_mixes) # iterate of number of mixtures
-#   {
-#     # find location of indices for each mixture group
-#     group_indices = current_index: (current_index + mix_sizes[i] - 1)
-#     # find the sign of the group
-#     group_sign = sign(logistic_param[group_indices]) %>% sum
-#
-#     if(group_sign > 0)
-#     {
-#       optimization_lower[group_indices] = 0
-#       optimization_upper[group_indices] = Inf
-#     }else
-#     {
-#       optimization_lower[group_indices] = -Inf
-#       optimization_upper[group_indices] = 0
-#     }
-#
-#     # change the current index for next iteration
-#     current_index = current_index + mix_sizes[i]
-#   }
-#   return(list(optimization_lower = optimization_lower,
-#               optimization_upper = optimization_upper))
-# }
-#
-# fgwqsr_ll = function(B,design_matrix, y_vec, vars) # log likelihood
-# {
-#   B_logistic = make_beta_vec(B,vars) # to evaluate special Beta vector
-#
-#   ll = logistic_neg_ll(B_logistic,design_matrix, y_vec)
-#   # will return negative of log likelihood -- what we need for optim
-#
-#   return(ll)
-# }
+
+get_optimization_region = function(logistic_param, vars)
+{
+  mix_sizes = sapply(vars$mixture, length) # sizes of mixture groups
+  num_mixes = vars$mixture %>% length # number of mixtures
+
+  current_index = 2 # 1st index is constant
+
+  optimization_lower = rep(-Inf, logistic_param %>% length)
+  optimization_upper = rep(Inf, logistic_param %>% length)
+
+  for(i in 1:num_mixes) # iterate of number of mixtures
+  {
+    # find location of indices for each mixture group
+    group_indices = current_index: (current_index + mix_sizes[i] - 1)
+    # find the sign of the group
+    group_sign = sign(logistic_param[group_indices]) %>% sum
+
+    if(group_sign > 0)
+    {
+      optimization_lower[group_indices] = 0
+      optimization_upper[group_indices] = Inf
+    }else
+    {
+      optimization_lower[group_indices] = -Inf
+      optimization_upper[group_indices] = 0
+    }
+
+    # change the current index for next iteration
+    current_index = current_index + mix_sizes[i]
+  }
+  return(list(optimization_lower = optimization_lower,
+              optimization_upper = optimization_upper))
+}
+
+fgwqsr_ll = function(B,design_matrix, y_vec, vars) # log likelihood
+{
+  B_logistic = make_beta_vec(B,vars) # to evaluate special Beta vector
+
+  ll = logistic_neg_ll(B_logistic,design_matrix, y_vec)
+  # will return negative of log likelihood -- what we need for optim
+
+  return(ll)
+}
 
 logistic_neg_ll = function(B,design_matrix, y_vec) # log likelihood
 {
@@ -444,152 +549,154 @@ logistic_hessian = function(B,design_matrix)
   return(hessian)
 }
 
-
-reparam_to_weights = function(ML_sol, vars)
-{
-  # we need to recover the model weights
-  num_mixes = length(vars$mixture)
-
-  index_effects = ML_sol[which(substr(names(ML_sol), 1,2) == "B_")]
-
-  constant = ML_sol[1]
-
-  weight_list = list()
-
-  for(i in 1:num_mixes)
-  {
-    group_weights = ML_sol[which(substring(names(ML_sol), 7) %in% vars$mixture[[i]])]
-
-    num_elements = length(vars$mixture[[i]])
-
-    group_index = 1:length(num_elements)
-
-    denom = 1+ sum(sapply(group_weights, FUN = exp))
-
-    weights = c(exp(group_weights) /denom, 1/denom )
-
-    names(weights) = paste("w",i, 1:num_elements , sep = "")
-
-    weight_list[[i]] = weights
-  }
-
-  length_phis = length(vars$continuous) + length(vars$categorical)
-
-  return_list = NULL
-
-  phis = c()
-
-  if(length_phis >0)
-  {
-    phis = ML_sol[-(1:(length(unlist(vars$mixture)) + 1))] # find phi sols
-    return_list = list(index_effects = index_effects, weight_list = weight_list, phis = phis, constant = constant)
-  }else
-  {
-    return_list = list(index_effects = index_effects, weight_list = weight_list, constant = constant)
-  }
-  return(return_list)
-}
+#
+# reparam_to_weights = function(ML_sol, vars)
+# {
+#   # we need to recover the model weights
+#   num_mixes = length(vars$mixture)
+#
+#   index_effects = ML_sol[which(substr(names(ML_sol), 1,2) == "B_")]
+#
+#   constant = ML_sol[1]
+#
+#   weight_list = list()
+#
+#   for(i in 1:num_mixes)
+#   {
+#     group_weights = ML_sol[which(substring(names(ML_sol), 7) %in% vars$mixture[[i]])]
+#
+#     num_elements = length(vars$mixture[[i]])
+#
+#     group_index = 1:length(num_elements)
+#
+#     denom = 1+ sum(sapply(group_weights, FUN = exp))
+#
+#     weights = c(exp(group_weights) /denom, 1/denom )
+#
+#     names(weights) = paste("w",i, 1:num_elements , sep = "")
+#
+#     weight_list[[i]] = weights
+#   }
+#
+#   length_phis = length(vars$continuous) + length(vars$categorical)
+#
+#   return_list = NULL
+#
+#   phis = c()
+#
+#   if(length_phis >0)
+#   {
+#     phis = ML_sol[-(1:(length(unlist(vars$mixture)) + 1))] # find phi sols
+#     return_list = list(index_effects = index_effects, weight_list = weight_list, phis = phis, constant = constant)
+#   }else
+#   {
+#     return_list = list(index_effects = index_effects, weight_list = weight_list, constant = constant)
+#   }
+#   return(return_list)
+# }
 
 # Hybrdized approach had problem -- weights that were estimated to be 0
 # had LRTS that were nonzero.  The reason this occurred was because
 # the initial optimization, in the reparameterization, was not converging
 # in a particular subregion for a group, and the LLs between full and nested
 # models when exluding a pollutant with weight 0 was nonzero.
-# fit_fgwqsr = function(formula, data, quantiles, output_hessian = F,
-#                       initial_cov_vals, return_y = F, return_data = F,
-#                       optim_control_list)
-# {
-#   f = as.character(formula)
-#
-#   f[3] = gsub("\n", "", f[3])
-#
-#   y = f[2]
-#
-#   vars = clean_vars(f[3])
-#
-#   # this dataset is modified locally.  Different LRT formulas specify exclusion
-#   # of different variables from the dataframe.  Each local data is built to
-#   # have the data organized such that it can be called in likelihood function.
-#   data = data[, c(y, unlist(vars))]
-#
-#   if(length(vars$categorical)>0) # if there are categorical variables
-#   {
-#     data = fastDummies::dummy_cols(data, select_columns = vars$categorical, remove_first_dummy = TRUE,
-#                       remove_selected_columns = TRUE) # add dummy variables
-#   }
-#
-#   data = quantize_vars(data,vars, quantiles) # quantize mixture components
-#
-#   # create likelihood model for ML
-#
-#   num_confounders = ncol(data) - unlist(vars$mixture)%>%length -1 # -1 for outcome y column
-#
-#   initial_vals =  rep(0, ncol(data))# also accounts for constant
-#
-#   initial_vals[1] = initial_cov_vals$intercept_est # intercept estimate
-#
-#   if(num_confounders > 0)
-#   {
-#     initial_vals[(ncol(data) - num_confounders + 1):ncol(data)] =
-#       initial_cov_vals$confounder_ests
-#   }
-#   # this is for likelihood ratio test
-#
-#   y_vec = data[,1] # y outcome vector to send to likelihood, will always be first col
-#   design_matrix = cbind(rep(1, nrow(data)), data[, -1]) %>% as.matrix # the first column of data has y value
-#
-#   # first perform a few initial iterations in reparameterization
-#
-#   ML_sol = stats::optim(par = initial_vals,
-#                  fn = fgwqsr_ll,
-#                  design_matrix = design_matrix,
-#                  y_vec = y_vec,
-#                  vars = vars,
-#                  method = "BFGS",
-#                  control = list(maxit = 1000,
-#                                 factr = 1E-14,
-#                                 reltol = 1E-20#,
-#                                 #fnscale = fnscale
-#                  ))
-#
-#   # now we extract the ML_sol and run using optim LBFGS for precise likelihood estimate
-#
-#   # ML solution in logistic parameterization
-#   ML_sol_logistic_param = make_beta_vec(ML_sol$par, vars)
-#
-#   optimization_region = get_optimization_region(ML_sol_logistic_param, vars)
-#
-#   initial_vals = ML_sol_logistic_param
-#
-#   final_fit = stats::optim(par = initial_vals,
-#                     fn = logistic_neg_ll,
-#                     gr = logistic_neg_gr,
-#                     design_matrix = design_matrix,
-#                     y_vec = y_vec,
-#                     method = "L-BFGS-B",
-#                     lower = optimization_region$optimization_lower,
-#                     upper = optimization_region$optimization_upper,
-#                     control = optim_control_list)
-#
-#   return_list = list(ML_sol= final_fit, vars = vars)
-#
-#   # return y and new data only for fist FG formula.
-#
-#   if(return_y == T)
-#   {
-#     return_list[["y"]] = y_vec
-#   }
-#   if(return_data == T)
-#   {
-#     return_list[["new_data"]] = data
-#   }
-#   return(return_list)
-# }
 
-
-fit_fgwqsr = function(formula, data, quantiles, output_hessian = F,
-                      initial_cov_vals, return_y = F, return_data = F,
+# this happens on few occasions, we can manually make the LRT
+fit_fgwqsr_hybrid = function(formula, data, quantiles, output_hessian = F,
+                      initial_vals, return_y = F, return_data = F,
                       optim_control_list)
+{
+  f = as.character(formula)
+
+  f[3] = gsub("\n", "", f[3])
+
+  y = f[2]
+
+  vars = clean_vars(f[3])
+
+  # this dataset is modified locally.  Different LRT formulas specify exclusion
+  # of different variables from the dataframe.  Each local data is built to
+  # have the data organized such that it can be called in likelihood function.
+  data = data[, c(y, unlist(vars))]
+
+  if(length(vars$categorical)>0) # if there are categorical variables
+  {
+    data = fastDummies::dummy_cols(data, select_columns = vars$categorical, remove_first_dummy = TRUE,
+                      remove_selected_columns = TRUE) # add dummy variables
+  }
+
+  data = quantize_vars(data,vars, quantiles) # quantize mixture components
+
+  # create likelihood model for ML
+
+  num_confounders = ncol(data) - unlist(vars$mixture)%>%length -1 # -1 for outcome y column
+
+  # initial_vals =  rep(0, ncol(data))# also accounts for constant
+  #
+  # initial_vals[1] = initial_cov_vals$intercept_est # intercept estimate
+  #
+  # if(num_confounders > 0)
+  # {
+  #   initial_vals[(ncol(data) - num_confounders + 1):ncol(data)] =
+  #     initial_cov_vals$confounder_ests
+  # }
+  # this is for likelihood ratio test
+
+  y_vec = data[,1] # y outcome vector to send to likelihood, will always be first col
+  design_matrix = cbind(rep(1, nrow(data)), data[, -1]) %>% as.matrix # the first column of data has y value
+
+  # first perform a few initial iterations in reparameterization
+
+  ML_sol = stats::optim(par = initial_vals,
+                 fn = fgwqsr_ll,
+                 design_matrix = design_matrix,
+                 y_vec = y_vec,
+                 vars = vars,
+                 method = "BFGS",
+                 control = list(maxit = 1000,
+                                factr = 1E-14,
+                                reltol = 1E-20#,
+                                #fnscale = fnscale
+                 ))
+
+  # now we extract the ML_sol and run using optim LBFGS for precise likelihood estimate
+
+  # ML solution in logistic parameterization
+  ML_sol_logistic_param = make_beta_vec(ML_sol$par, vars)
+
+  optimization_region = get_optimization_region(ML_sol_logistic_param, vars)
+
+  initial_vals = ML_sol_logistic_param
+
+  final_fit = stats::optim(par = initial_vals,
+                    fn = logistic_neg_ll,
+                    gr = logistic_neg_gr,
+                    design_matrix = design_matrix,
+                    y_vec = y_vec,
+                    method = "L-BFGS-B",
+                    lower = optimization_region$optimization_lower,
+                    upper = optimization_region$optimization_upper,
+                    control = optim_control_list)
+
+  return_list = list(ML_sol= final_fit, vars = vars)
+
+  # return y and new data only for fist FG formula.
+
+  if(return_y == T)
+  {
+    return_list[["y"]] = y_vec
+  }
+  if(return_data == T)
+  {
+    return_list[["new_data"]] = data
+  }
+  return(return_list)
+}
+
+# MO stands for multiple optim
+fit_fgwqsr_MO = function(formula, data, quantiles, output_hessian = F,
+                      initial_cov_vals, return_y = F, return_data = F,
+                      optim_control_list, cores)
 {
   f = as.character(formula)
 
@@ -634,24 +741,45 @@ fit_fgwqsr = function(formula, data, quantiles, output_hessian = F,
   optimization_regions = generate_optimization_regions(vars = vars,
                                                        num_confounders = num_confounders)
 
-  fits = vector(mode = "list", length = length(optimization_regions))
+  future::plan(future::multisession, workers = cores)
 
-  # iterate over subregions -- no hybridized approach -- ensures correct ll optimization
-  for(i in 1: length(fits))
-  {
-    initial_vals = generate_initial_vals(optimization_regions[[i]]$lower,
-                                         optimization_regions[[i]]$upper)
+  fits = future.apply::future_lapply(1: length(optimization_regions),
+                                     FUN = function(i)
+                                     {
+                                       initial_vals = generate_initial_vals(optimization_regions[[i]]$lower,
+                                                                            optimization_regions[[i]]$upper)
 
-    fits[[i]] = stats::optim(par = initial_vals,
-                             fn = logistic_neg_ll,
-                             gr = logistic_neg_gr,
-                             design_matrix = design_matrix,
-                             y_vec = y_vec,
-                             method = "L-BFGS-B",
-                             lower = optimization_regions[[i]]$lower,
-                             upper = optimization_regions[[i]]$upper,
-                             control = optim_control_list)
-  }
+                                       sol = stats::optim(par = initial_vals,
+                                                                fn = logistic_neg_ll,
+                                                                gr = logistic_neg_gr,
+                                                                design_matrix = design_matrix,
+                                                                y_vec = y_vec,
+                                                                method = "L-BFGS-B",
+                                                                lower = optimization_regions[[i]]$lower,
+                                                                upper = optimization_regions[[i]]$upper,
+                                                                control = optim_control_list)
+                                       return(sol)
+                                     })
+
+  future::plan(future::sequential)
+
+  # fits = vector(mode = "list", length = length(optimization_regions))
+  # # iterate over subregions -- no hybridized approach -- ensures correct ll optimization
+  # for(i in 1: length(fits))
+  # {
+  #   initial_vals = generate_initial_vals(optimization_regions[[i]]$lower,
+  #                                        optimization_regions[[i]]$upper)
+  #
+  #   fits[[i]] = stats::optim(par = initial_vals,
+  #                            fn = logistic_neg_ll,
+  #                            gr = logistic_neg_gr,
+  #                            design_matrix = design_matrix,
+  #                            y_vec = y_vec,
+  #                            method = "L-BFGS-B",
+  #                            lower = optimization_regions[[i]]$lower,
+  #                            upper = optimization_regions[[i]]$upper,
+  #                            control = optim_control_list)
+  # }
 
   final_fit = fits[[which.min(sapply(fits, "[[", 2))]]
 
@@ -769,43 +897,65 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
 {
   if(verbose == TRUE) # call to progress
   {
-    p <- progressr::progressor(along = formulas)
+    p <- progressr::progressor(steps = length(formulas) -1)
   }
 
   # get initial vals for intercept and adjusting covariates
   initial_cov_vals = get_cov_initial_vals(formula = stats::formula(formulas[[1]]),
                                           data = data,
                                           quantiles = quantiles)
+  # initialize for storing results
+  fits = vector(mode = "list", length = length(formulas))
+
+  # perform full model fit using multiple optim -- not hybridized!
+
+  if(verbose == TRUE) # call to progress
+  {
+    message("Fitting full model -- calculating initial values for nested models...")
+  }
+
+  fits[[1]] = fit_fgwqsr_MO(formula = stats::formula(formulas[[1]]),
+                            data = data,
+                            quantiles = quantiles,
+                            return_y = T,
+                            return_data = T, initial_cov_vals = initial_cov_vals,
+                            optim_control_list = optim_control_list,
+                            cores = cores)
+
+  # From this first fit, get solution -- generate initial values for nested models
+
+  full_mod_sol = fits[[1]]$ML_sol$par
+
+  # generate initial values for nested models -- initial values for chemicals too!
+
+  initial_vals = generate_nested_initial_vals(full_mod_sol = full_mod_sol,
+                                              vars = vars)
+  if(verbose == T)
+  {
+    message("\nFitting nested models...")
+  }
+
   future::plan(future::multisession, workers = cores)
 
-  fits = future.apply::future_lapply(1:length(formulas), FUN = function(x)
+  fits[2:length(formulas)] = future.apply::future_lapply(2:length(formulas), FUN = function(x)
   {
-    result = NULL
-    if(x == 1) # if the original formula
+    # if only a 1 group LRT with only 1 mixture group in formula
+    if((length(vars$mixture) == 1) && (x == (vars$mixture %>% unlist %>% length %>% sum(2))))
     {
-      result = fit_fgwqsr(stats::formula(formulas[x]), data, quantiles, return_y = T,
-                          return_data = T, initial_cov_vals = initial_cov_vals,
-                          optim_control_list = optim_control_list)
-      if(verbose == TRUE)
-      {
-        p()
-      }
-    }else # if LRT for weights, return LL
+      result = stats::glm(stats::formula(paste(formulas[x], "1")), data = data, family = "binomial") %>% stats::logLik
+    }else # if either single pollutant LRT or 1 group LRT (more than 1 mixture group)
     {
-      # the ifelse in "result" is to handle the ll for the 1 group null ll for a 1 group lrt
-      result = ifelse( (length(vars$mixture) == 1) && (x == (vars$mixture %>% unlist %>% length %>% sum(2))),
-                       stats::glm(stats::formula(paste(formulas[x], "1")), data = data, family = "binomial") %>% stats::logLik,
-                       -1*fit_fgwqsr(stats::formula(formulas[x]), data, quantiles,
-                                     initial_cov_vals = initial_cov_vals,
-                                     optim_control_list = optim_control_list)$ML_sol$value)
-
-      if(verbose == TRUE)
-      {
-        p()
-      }
+      result = -1*fit_fgwqsr_hybrid(stats::formula(formulas[x]), data, quantiles,
+                           initial_vals = initial_vals[[x-1]],
+                           optim_control_list = optim_control_list)$ML_sol$value
     }
-    return(result)
 
+      if(verbose == TRUE)
+      {
+        p()
+      }
+
+    return(result)
   })
 
   future::plan(future::sequential)
@@ -869,8 +1019,6 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
 
   time_begin = proc.time()[3]
 
-  # get formula and vars object that stores info about model
-  f = as.character(formula); vars = clean_vars(gsub("\n", "", f[3]))
 
   # perform initial checks ##################################################
   # check if formula
@@ -879,6 +1027,9 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
     stop("The formula argument must be of type formula.
          If using a string formula, consider using as.formula(formula).")
   }
+
+  # get formula and vars object that stores info about model
+  f = as.character(formula); vars = clean_vars(gsub("\n", "", f[3]))
 
   # check if data is a dataframe
   if(!is.data.frame(data))
@@ -1023,7 +1174,6 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
   if(verbose == TRUE)
   {
     progressr::handlers("progress")
-    message("\nFitting full model and nested models...")
     progressr::with_progress(fits <- fgwqsr_caller(formulas, data, quantiles,vars, verbose,
                                         cores, optim_control_list))
     message("\nGenerating LRT distributions under H0...")

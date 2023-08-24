@@ -1243,6 +1243,10 @@ perform_inference = function(ll_models, params_logistic_form, vars,cov_mat,
   # make sure numerically negative LRTs are set to 0
   lrts_FG = ifelse(lrts_FG < 0,0, lrts_FG)
 
+  # make SPLRTs for weights estimated to be exactly 0, to have SPLRT = 0
+  # order is splrts first in lrts_FG
+  lrts_FG[1:sum(num_in_each_group)] = ifelse(pollutant_MLEs == 0, 0,lrts_FG[1:sum(num_in_each_group)])
+
   # perform inference on single pollutant and group effects
   lrt_dists = vector(mode = "list", length = nrow(inference_order))
 
@@ -1256,74 +1260,45 @@ perform_inference = function(ll_models, params_logistic_form, vars,cov_mat,
 
     p <- progressr::progressor(steps = nrow(inference_order))
     progressr::handlers("progress")
+  }
 
-    for(i in 1: nrow(inference_order))
+  for(i in 1: nrow(inference_order))
+  {
+    pollutant_num = inference_order[i,2]
+    null_effects = MLE_effects
+
+    # if a LRT is less than a threshold, do not waste time computing LRT
+    # distribution
+    if(lrts_FG[i] <  LRT_threshold)
     {
-      # if a LRT is less than a threshold, do not waste time computing LRT
-      # distirbution
-      if(lrts_FG[i] <  LRT_threshold)
-      {
-        lrt_dists[[i]] = Inf
+      lrt_dists[[i]] = Inf
 
-      }else
-      {
-      pollutant_num = inference_order[i,2]
-      null_effects = MLE_effects
+    }else if(!is.na(pollutant_num)) # if SPLRT
+    {
+      group_num = inference_order[i,1]
+      null_effects[[group_num]][pollutant_num] = 0
+      lrt_dists[[i]] = mvn_lrt_simulation(effects = null_effects, cov_mat = pollutant_cov_mat,
+                                          group_num = inference_order[i,1],
+                                          pollutant_num =  pollutant_num,
+                                          num_sims = num_sims,
+                                          zero_threshold_cutoff = zero_threshold_cutoff,
+                                          cores = cores)
 
-      # if one group LRT, simulate with group effects being null
-      if(is.na(pollutant_num))
-      {
-        group_num = inference_order[i,1]
-        null_effects[[group_num]] = rep(0, num_in_each_group[group_num])
-      }else # if SPLRT, set pollutant effect to 0
-      {
-        group_num = inference_order[i,1]
-        null_effects[[group_num]][pollutant_num] = 0
-      }
-        lrt_dists[[i]] = mvn_lrt_simulation(effects = null_effects, cov_mat = pollutant_cov_mat,
-                                            group_num = inference_order[i,1],
-                                            pollutant_num =  pollutant_num,
-                                            num_sims = num_sims,
-                                            zero_threshold_cutoff = zero_threshold_cutoff,
-                                            cores = cores)
-
-      }
-      p()
+    }else  # if one group LRT, simulate with group effects being null
+    {
+      group_num = inference_order[i,1]
+      null_effects[[group_num]] = rep(0, num_in_each_group[group_num])
+      lrt_dists[[i]] = mvn_lrt_simulation(effects = null_effects, cov_mat = pollutant_cov_mat,
+                                          group_num = inference_order[i,1],
+                                          pollutant_num =  pollutant_num,
+                                          num_sims = num_sims,
+                                          zero_threshold_cutoff = zero_threshold_cutoff,
+                                          cores = cores)
     }
 
-  }else
-  {
-    for(i in 1: nrow(inference_order))
+    if(verbose == TRUE)
     {
-
-      # if a LRT is less than a threshold, do not waste time computing LRT
-      # distribution
-      if(lrts_FG[i] <  LRT_threshold)
-      {
-        lrt_dists[[i]] = Inf
-
-      }else
-      {
-        pollutant_num = inference_order[i,2]
-        null_effects = MLE_effects
-
-        # if one group LRT, simulate with group effects being null
-        if(is.na(pollutant_num))
-        {
-          group_num = inference_order[i,1]
-          null_effects[[group_num]] = rep(0, num_in_each_group[group_num])
-        }else # if SPLRT, set pollutant effect to 0
-        {
-          group_num = inference_order[i,1]
-          null_effects[[group_num]][pollutant_num] = 0
-        }
-        lrt_dists[[i]] = mvn_lrt_simulation(effects = null_effects, cov_mat = pollutant_cov_mat,
-                                            group_num = inference_order[i,1],
-                                            pollutant_num =  pollutant_num,
-                                            num_sims = num_sims,
-                                            zero_threshold_cutoff = zero_threshold_cutoff,
-                                            cores = cores)
-      }
+      p()
     }
   }
 
