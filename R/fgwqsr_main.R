@@ -390,34 +390,36 @@ reparam_to_multinomial = function(B, temp_vars)
   {
     # if only 1 in the group, leave for unconstrained optimziation
     if(num_in_each_group[i] > 1)
-    # betas for group
-    betas = B[current_ind:(current_ind + num_in_each_group[i] -1)]
-    gamma = sum(betas)
+    {
+      # betas for group
+      betas = B[current_ind:(current_ind + num_in_each_group[i] -1)]
+      gamma = sum(betas)
 
-    # if there are numerically 0 values, need them to not be zero for reparameterization
-    if(gamma > 0) # if group effect is positive
-    {
-      betas = ifelse(betas == 0, 1E-4, betas)
-    }else # if group effect is negative
-    {
-      betas = ifelse(betas == 0, -1E-4, betas)
+      # if there are numerically 0 values, need them to not be zero for reparameterization
+      if(gamma > 0) # if group effect is positive
+      {
+        betas = ifelse(betas == 0, 1E-4, betas)
+      }else # if group effect is negative
+      {
+        betas = ifelse(betas == 0, -1E-4, betas)
+      }
+
+      # recompute gamma
+      gamma = sum(betas)
+
+      # need to solve for alphas
+      # create matrix to solve system of equations
+      mat = matrix(data = 1, nrow = num_in_each_group[i] - 1,
+                   ncol = num_in_each_group[i] - 1)
+
+      diag(mat) = 1 - gamma/betas[-length(betas)]
+
+      # solve for alphas
+      alphas = solve(mat, rep(-1,num_in_each_group[i] - 1)) %>% log
+
+      # return (gamma, alphas) for group
+      reparam[current_ind:(current_ind + num_in_each_group[i] -1)] = c(gamma, alphas)
     }
-
-    # recompute gamma
-    gamma = sum(betas)
-
-    # need to solve for alphas
-    # create matrix to solve system of equations
-    mat = matrix(data = 1, nrow = num_in_each_group[i] - 1,
-                 ncol = num_in_each_group[i] - 1)
-
-    diag(mat) = 1 - gamma/betas[-length(betas)]
-
-    # solve for alphas
-    alphas = solve(mat, rep(-1,num_in_each_group[i] - 1)) %>% log
-
-    # return (gamma, alphas) for group
-    reparam[current_ind:(current_ind + num_in_each_group[i] -1)] = c(gamma, alphas)
     # increment counter
     current_ind = current_ind + num_in_each_group[i]
   }
