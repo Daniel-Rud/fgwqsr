@@ -750,7 +750,7 @@ listify = function(vector, indices)
 
 # for single pollutant LRT, modify function
 
-generate_optim_limits = function(effects, cov_mat, zero_threshold_cutoff)
+generate_optim_limits = function(effects, cov_mat)
 {
   # these are not passed to the function because we change effects and cov_mat depending
   # on H0 and H1, this is the easier implementation to run the function for H0 and H1
@@ -766,7 +766,7 @@ generate_optim_limits = function(effects, cov_mat, zero_threshold_cutoff)
   # it is close to the boundary of the constrained region
   # first col has pollutant num, second col has prob outside direction
 
-  # if cov_mat is a single number
+  #if cov_mat is a single number
   variances = diag(cov_mat)
 
   marginal_probs = (1:sum(num_in_each_group)) %>% sapply(FUN = function(x)
@@ -779,11 +779,12 @@ generate_optim_limits = function(effects, cov_mat, zero_threshold_cutoff)
 
 
   # set initial cones to R1 cones -- we will modify these
-  lower = rep(-Inf, nrow( marginal_probs))
-  upper = rep(Inf, nrow( marginal_probs))
+  lower = rep(-Inf, length(unlist(effects)))
+  upper = rep(Inf, length(unlist(effects)))
 
   # determine which pollutants are on the boundary by zero_threshold_cutoff
-  boundary_cases = which(marginal_probs[,2] >= zero_threshold_cutoff)
+  # we already evaluate the ZTC cutoff in the mvn_simulation function
+  boundary_cases = which(unlist(effects) == 0)
 
   # apply the boundary cone
   for(i in boundary_cases)
@@ -917,11 +918,32 @@ mvn_lrt_simulation= function(effects, cov_mat, group_num, pollutant_num = NA,
                              num_sims = 10000, zero_threshold_cutoff = .5,
                              cores = future::availableCores(), seed = 2023)
 {
-  set.seed(seed) # this is so if we repeat inference, we should get same pvalue
   num_groups = length(effects) # number of groups
   num_in_each_group = sapply(effects, length) # number of pollutants in each group
 
+  # Generate marginal probs that a pollutant is outside of its group direction, will determine whether
+  # it is close to the boundary of the constrained region
+  # first col has pollutant num, second col has prob outside direction
+
+  variances = diag(cov_mat)
+  # group directional from MLEs
+  pollutant_directions = sapply(effects, sum) %>% sign %>% rep(times = num_in_each_group)
+
+  marginal_probs = (1:sum(num_in_each_group)) %>% sapply(FUN = function(x)
+  {
+    return(
+      marginal_prob_outside_direction(x, mean = (effects %>% unlist)[x],
+                                      sigma = sqrt(variances[x]),
+                                      pollutant_direction = pollutant_directions[x]))
+  })
+
+  # set effects of parameters with marginal prob < ZTC to 0
+  effects = ifelse(marginal_probs >= as.numeric(zero_threshold_cutoff),
+                          0,unlist(effects))
+  effects  = listify(effects , num_in_each_group)
+
   # simulate the MVN 1 sample realizations
+  set.seed(seed) # this is so if we repeat inference, we should get same pvalue
   mvn_samples = mvtnorm::rmvnorm(num_sims, mean = effects %>% unlist, sigma = cov_mat)
   inv_cov_mat = pracma::pinv(cov_mat) # used in optim, use moore pentrose psuedoinverse
 
@@ -987,12 +1009,10 @@ mvn_lrt_simulation= function(effects, cov_mat, group_num, pollutant_num = NA,
     }
 
     optimization_limits_list_H0 = generate_optim_limits(effects = effects_H0,
-                                                        cov_mat = cov_mat_H0,
-                                                        zero_threshold_cutoff = zero_threshold_cutoff)
+                                                        cov_mat = cov_mat_H0)
 
     optimization_limits_list_H1 = generate_optim_limits(effects = effects,
-                                                        cov_mat = cov_mat,
-                                                        zero_threshold_cutoff = zero_threshold_cutoff)
+                                                        cov_mat = cov_mat)
 
     # perform optimization
 
@@ -1214,14 +1234,14 @@ perform_inference = function(ll_models, params_logistic_form, vars,cov_mat,
 
   num_pollutants = num_in_each_group %>% sum
 
-  # the order of ll_models will be full model, num_pollutants SPLRTs,
-  # then num_group_effects 1 group LRTs
-
   pollutant_MLEs = params_logistic_form[2:(2+num_pollutants-1)]
 
   MLE_effects = listify(pollutant_MLEs, num_in_each_group)
 
   pollutant_cov_mat = cov_mat[2:(2+num_pollutants-1), 2:(2+num_pollutants-1)]
+
+  # the order of ll_models will be full model, num_pollutants SPLRTs,
+  # then num_group_effects 1 group LRTs
 
   # create matrix with group_num and pollutant_num to call in future_apply
 
@@ -1242,10 +1262,6 @@ perform_inference = function(ll_models, params_logistic_form, vars,cov_mat,
 
   # make sure numerically negative LRTs are set to 0
   lrts_FG = ifelse(lrts_FG < 0,0, lrts_FG)
-
-  # make SPLRTs for weights estimated to be exactly 0, to have SPLRT = 0
-  # order is splrts first in lrts_FG
-  lrts_FG[1:sum(num_in_each_group)] = ifelse(pollutant_MLEs == 0, 0,lrts_FG[1:sum(num_in_each_group)])
 
   # perform inference on single pollutant and group effects
   lrt_dists = vector(mode = "list", length = nrow(inference_order))
