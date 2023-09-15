@@ -1121,7 +1121,7 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
 
   } else if(sum(data[f[2]]) / nrow(data) < .05)
   {
-    message("Case control ratio is extremely unproportional.  Less than 5% of observations are cases.  Proceed with caution.")
+    message("Alert: Less than 5% of observations are cases.")
   }
 
 
@@ -1390,238 +1390,240 @@ print.fgwqsr = function(object,...)
 
 }
 
+# Nonparametric bootstrap doesnt work in this situation -- appeals to central limit theorem,
+# requires some smoothness of the functional statistic fo the bootstrap
 
-#' Generate confidence intervals for group and single pollutant effects through nonparametric bootstrapping.
-#' @param object a fitted object from a fgwqsr() call
-#' @param parm should be left unspecified
-#' @param level level of confidence interval to produce -- default is 0.95 for 95\% bootstrap confidence intervals
-#' @param ... optional options -- see details
-#' @description
-#'  Provides confidence intervals for group index, single chemical, and adjusting covariate effects through
-#'  nonparameteric bootstrapping.  Bootstrap samples are stratified by cases and controls, with each bootstrap sample keeping
-#'  same proportions of cases and controls as in the original data.  Each bootstrap sample has the same number of observations
-#'  as the original dataset.  NOTE: Bootstrapped samples are sampled from the original data with replacement!
-#' @details
-#' One can provide the following two arguments:
-#'`boot_reps` - number of bootstrapped replicates
-#'`verbose` - allows messages and progress bars to track progress of bootstrapping.
+#' #' Generate confidence intervals for group and single pollutant effects through nonparametric bootstrapping.
+#' #' @param object a fitted object from a fgwqsr() call
+#' #' @param parm should be left unspecified
+#' #' @param level level of confidence interval to produce -- default is 0.95 for 95\% bootstrap confidence intervals
+#' #' @param ... optional options -- see details
+#' #' @description
+#' #'  Provides confidence intervals for group index, single chemical, and adjusting covariate effects through
+#' #'  nonparameteric bootstrapping.  Bootstrap samples are stratified by cases and controls, with each bootstrap sample keeping
+#' #'  same proportions of cases and controls as in the original data.  Each bootstrap sample has the same number of observations
+#' #'  as the original dataset.  NOTE: Bootstrapped samples are sampled from the original data with replacement!
+#' #' @details
+#' #' One can provide the following two arguments:
+#' #'`boot_reps` - number of bootstrapped replicates
+#' #'`verbose` - allows messages and progress bars to track progress of bootstrapping.
+#' #'
+#' #'
+#' #' @export
+#' #'
+#' confint.fgwqsr = function(object, parm, level = 0.95, ...)
+#' {
+#'   passed_args = list(...)
+#'
+#'   if(!methods::is(object, "fgwqsr"))
+#'   {
+#'     stop("Must pass the object output of the fgwqsr() function.  For example...
+#'          some_model = fgwqsr(formula, data)
+#'          summary(some_model)")
+#'   }
+#'
+#'   boot_reps = 1000 # initialize
+#'   if("boot_reps" %in% names(passed_args))
+#'   {
+#'     if(!is.numeric(passed_args$boot_reps))
+#'     {
+#'       stop("The passed argument `boot_reps` must be an integer.")
+#'     }else if(passed_args$boot_reps <= 10)
+#'     {
+#'       stop("The passed argument `boot_reps` should be a positive integer greater than 10")
+#'     }else
+#'     {
+#'       boot_reps = passed_args$boot_reps
+#'     }
+#'   }
+#'
+#'   verbose = T
+#'   if("verbose" %in% names(passed_args))
+#'   {
+#'     if(!is.logical(passed_args$verbose))
+#'     {
+#'       stop("The passed argument `verbose` must either be a logical -- either `TRUE` or `FALSE`. ")
+#'     }else
+#'     {
+#'       verbose = passed_args$verbose
+#'     }
+#'   }
+#'
+#'   parm = NA
+#'
+#'   # stratified bootstrap procedure here -- we do not use `boot` because we want progress bars!
+#'   # we sample cases and controls based on their proportion int he dataset.
+#'
+#'   if(verbose == T)
+#'   {
+#'     message("Generating bootstrap replicates...")
+#'   }
+#'
+#'   progressr::with_progress(bootstrap_results <- generate_bootstrap(object, level,boot_reps, verbose))
 #'
 #'
-#' @export
+#'   return(bootstrap_results)
 #'
-confint.fgwqsr = function(object, parm, level = 0.95, ...)
-{
-  passed_args = list(...)
-
-  if(!methods::is(object, "fgwqsr"))
-  {
-    stop("Must pass the object output of the fgwqsr() function.  For example...
-         some_model = fgwqsr(formula, data)
-         summary(some_model)")
-  }
-
-  boot_reps = 1000 # initialize
-  if("boot_reps" %in% names(passed_args))
-  {
-    if(!is.numeric(passed_args$boot_reps))
-    {
-      stop("The passed argument `boot_reps` must be an integer.")
-    }else if(passed_args$boot_reps <= 10)
-    {
-      stop("The passed argument `boot_reps` should be a positive integer greater than 10")
-    }else
-    {
-      boot_reps = passed_args$boot_reps
-    }
-  }
-
-  verbose = T
-  if("verbose" %in% names(passed_args))
-  {
-    if(!is.logical(passed_args$verbose))
-    {
-      stop("The passed argument `verbose` must either be a logical -- either `TRUE` or `FALSE`. ")
-    }else
-    {
-      verbose = passed_args$verbose
-    }
-  }
-
-  parm = NA
-
-  # stratified bootstrap procedure here -- we do not use `boot` because we want progress bars!
-  # we sample cases and controls based on their proportion int he dataset.
-
-  if(verbose == T)
-  {
-    message("Generating bootstrap replicates...")
-  }
-
-  progressr::with_progress(bootstrap_results <- generate_bootstrap(object, level,boot_reps, verbose))
-
-
-  return(bootstrap_results)
-
-}
-
-generate_bootstrap = function(object, level, boot_reps, verbose)
-{
-  # stratified bootstrap procedure here -- we do not use `boot` because we want progress bars!
-  # we sample cases and controls based on their proportion int he dataset.
-
-  total_data = object$data
-
-  n = nrow(total_data)
-
-  f = as.character(object$formula)
-
-  f[3] = gsub("\n", "", f[3])
-
-  outcome = f[2]
-
-  candidate_indices_cases = (1:n)[object$data[, outcome] ==1]
-  candidate_indices_controls = (1:n)[object$data[, outcome] ==0]
-
-  percent_cases = sum(object$data[, outcome]) / n
-  percent_controls = 1-percent_cases
-
-  if(verbose == T)
-  {
-    p <- progressr::progressor(steps = boot_reps)
-  }
-
-
-  future::plan(future::multisession, workers = object$cores)
-
-  boot_results = future.apply::future_sapply(1:boot_reps, FUN = function(x)
-  {
-    case_indices_sample = sample(x = candidate_indices_cases,
-                                 size = round(n * percent_cases),
-                                 replace = T)
-
-    control_indices_sample = sample(x = candidate_indices_controls,
-                                    size = round(n * percent_controls),
-                                    replace = T)
-
-    boot_data = total_data[c(case_indices_sample,control_indices_sample), ]
-
-
-    initial_cov_vals = get_cov_initial_vals(formula = object$formula,
-                                            data = boot_data,
-                                            quantiles = object$quantiles)
-    # we fit on one core -- parallelize through bootstrap iterations
-    fg_fit = fit_fgwqsr_MO(formula = object$formula,
-                           data = boot_data,
-                           quantiles = object$quantiles,
-                           return_y = F,
-                           return_data = F,
-                           initial_cov_vals = initial_cov_vals,
-                           optim_control_list = object$optim_control_list,
-                           cores = 1)
-
-    sol_logistic = fg_fit$ML_sol$par
-    names(sol_logistic) = c("Intercept", names(boot_data)[-1])
-
-    # get group effects
-    group_effects = vector(mode = "numeric", length = length(vars$mixture))
-
-    run_ind = 2 # first element is intercept
-    for(i in 1: length(vars$mixture))
-    {
-      group_effects[i] = sum(sol_logistic[run_ind: (run_ind + length(vars$mixture[[i]]) -1)])
-      run_ind = run_ind + length(vars$mixture[[i]])
-    }
-
-    names(group_effects) = paste("Mixture Effect", 1:length(vars$mixture))
-
-    if(verbose == T)
-    {
-      p()
-    }
-
-    return(c(group_effects,sol_logistic))
-  }, future.seed = 2023) %>% t
-
-  future::plan(future::sequential)
-
-  result_frame = matrix(nrow = ncol(boot_results), ncol = 4)
-
-  for(i in 1:ncol(boot_results))
-  {
-    result_frame[i,2] = boot_results[,i] %>% mean
-    result_frame[i,3:4] = stats::quantile(boot_results[,i],
-                                          probs = c((1-level)/2, 1-(1-level)/2))
-  }
-
-  result_frame[,1] = c(object$inference_frames$group_index_frame$Estimate,
-                       object$inference_frames$adj_param_frame$Estimate[1],
-                       rep(object$inference_frames$group_index_frame$Estimate,
-                           times = sapply(object$vars$mixture, length)) *
-                         object$inference_frames$weight_frame$`Weight Estimate`,
-                       object$inference_frames$adj_param_frame$Estimate[-1])
-
-
-  rownames(result_frame) = colnames(boot_results)
-  colnames(result_frame) = c("FGWQSR Estimate","Bootstrap Mean", paste0((1-level)/2, " %"),
-                             paste0( 1-(1-level)/2, " %"))
-
-
-  # bootstrap_results = boot::boot(data = object$data,
-  #                                statistic = function(data,i)
-  #                                  {
-  #                                  boot_data = data[i,]
-  #
-  #                                  f = as.character(formula)
-  #                                  outcome = f[2]
-  #                                  vars = clean_vars(gsub("\n", "", f[3]))
-  #
-  #                                  initial_cov_vals = get_cov_initial_vals(formula = object$formula,
-  #                                                                          data = boot_data,
-  #                                                                          quantiles = object$quantiles)
-  #                                  # we fit on one core -- parallelize through bootstrap iterations
-  #                                  fg_fit = fit_fgwqsr_MO(formula = object$formula,
-  #                                                         data = boot_data,
-  #                                                         quantiles = object$quantiles,
-  #                                                         return_y = F,
-  #                                                         return_data = F,
-  #                                                         initial_cov_vals = initial_cov_vals,
-  #                                                         optim_control_list = object$optim_control_list,
-  #                                                         cores = 1)
-  #
-  #                                  sol_logistic = fg_fit$ML_sol$par
-  #                                  names(sol_logistic) = c("Intercept", names(boot_data)[-1])
-  #
-  #                                  # get group effects
-  #                                  group_effects = vector(mode = "numeric", length = length(vars$mixture))
-  #
-  #                                  run_ind = 2 # first element is intercept
-  #                                  for(i in 1: length(vars$mixture))
-  #                                  {
-  #                                    group_effects[i] = sum(sol_logistic[run_ind: (run_ind + length(vars$mixture[[i]]) -1)])
-  #                                    run_ind = run_ind + length(vars$mixture[[i]])
-  #                                  }
-  #
-  #                                  names(group_effects) = paste("Mixture Effect", 1:length(vars$mixture))
-  #
-  #                                  return(c(group_effects,sol_logistic ))
-  #                                },
-  #                                strata = object$data[, outcome],
-  #                                R = 10, )
-
-  # result_frame = matrix(nrow = ncol(bootstrap_results$t), ncol = 3)
-  # for(i in 1:ncol(bootstrap_results$t))
-  # {
-  #   result_frame[i,1] = bootstrap_results$t0[i]
-  #   result_frame[i,2] = bootstrap_results$t[,i] %>% mean
-  #   result_frame[i,3:4] = boot::boot.ci(bootstrap_results,type = "perc",
-  #                                       index = i, conf = level)$percent[1,4:5]
-  # }
-  #
-  # rownames(result_frame) = names(bootstrap_results$t0)
-  # colnames(result_frame) = c("FGWQSR Estimate","Bootstrap Mean", paste0((1-level)/2, " %"),
-  #                            paste0( 1-(1-level)/2, " %"))
-
-  return(list(result_frame = result_frame,
-              bootstrap_results = boot_results))
-}
+#' }
+#'
+#' generate_bootstrap = function(object, level, boot_reps, verbose)
+#' {
+#'   # stratified bootstrap procedure here -- we do not use `boot` because we want progress bars!
+#'   # we sample cases and controls based on their proportion int he dataset.
+#'
+#'   total_data = object$data
+#'
+#'   n = nrow(total_data)
+#'
+#'   f = as.character(object$formula)
+#'
+#'   f[3] = gsub("\n", "", f[3])
+#'
+#'   outcome = f[2]
+#'
+#'   candidate_indices_cases = (1:n)[object$data[, outcome] ==1]
+#'   candidate_indices_controls = (1:n)[object$data[, outcome] ==0]
+#'
+#'   percent_cases = sum(object$data[, outcome]) / n
+#'   percent_controls = 1-percent_cases
+#'
+#'   if(verbose == T)
+#'   {
+#'     p <- progressr::progressor(steps = boot_reps)
+#'   }
+#'
+#'
+#'   future::plan(future::multisession, workers = object$cores)
+#'
+#'   boot_results = future.apply::future_sapply(1:boot_reps, FUN = function(x)
+#'   {
+#'     case_indices_sample = sample(x = candidate_indices_cases,
+#'                                  size = round(n * percent_cases),
+#'                                  replace = T)
+#'
+#'     control_indices_sample = sample(x = candidate_indices_controls,
+#'                                     size = round(n * percent_controls),
+#'                                     replace = T)
+#'
+#'     boot_data = total_data[c(case_indices_sample,control_indices_sample), ]
+#'
+#'
+#'     initial_cov_vals = get_cov_initial_vals(formula = object$formula,
+#'                                             data = boot_data,
+#'                                             quantiles = object$quantiles)
+#'     # we fit on one core -- parallelize through bootstrap iterations
+#'     fg_fit = fit_fgwqsr_MO(formula = object$formula,
+#'                            data = boot_data,
+#'                            quantiles = object$quantiles,
+#'                            return_y = F,
+#'                            return_data = F,
+#'                            initial_cov_vals = initial_cov_vals,
+#'                            optim_control_list = object$optim_control_list,
+#'                            cores = 1)
+#'
+#'     sol_logistic = fg_fit$ML_sol$par
+#'     names(sol_logistic) = c("Intercept", names(boot_data)[-1])
+#'
+#'     # get group effects
+#'     group_effects = vector(mode = "numeric", length = length(vars$mixture))
+#'
+#'     run_ind = 2 # first element is intercept
+#'     for(i in 1: length(vars$mixture))
+#'     {
+#'       group_effects[i] = sum(sol_logistic[run_ind: (run_ind + length(vars$mixture[[i]]) -1)])
+#'       run_ind = run_ind + length(vars$mixture[[i]])
+#'     }
+#'
+#'     names(group_effects) = paste("Mixture Effect", 1:length(vars$mixture))
+#'
+#'     if(verbose == T)
+#'     {
+#'       p()
+#'     }
+#'
+#'     return(c(group_effects,sol_logistic))
+#'   }, future.seed = 2023) %>% t
+#'
+#'   future::plan(future::sequential)
+#'
+#'   result_frame = matrix(nrow = ncol(boot_results), ncol = 4)
+#'
+#'   for(i in 1:ncol(boot_results))
+#'   {
+#'     result_frame[i,2] = boot_results[,i] %>% mean
+#'     result_frame[i,3:4] = stats::quantile(boot_results[,i],
+#'                                           probs = c((1-level)/2, 1-(1-level)/2))
+#'   }
+#'
+#'   result_frame[,1] = c(object$inference_frames$group_index_frame$Estimate,
+#'                        object$inference_frames$adj_param_frame$Estimate[1],
+#'                        rep(object$inference_frames$group_index_frame$Estimate,
+#'                            times = sapply(object$vars$mixture, length)) *
+#'                          object$inference_frames$weight_frame$`Weight Estimate`,
+#'                        object$inference_frames$adj_param_frame$Estimate[-1])
+#'
+#'
+#'   rownames(result_frame) = colnames(boot_results)
+#'   colnames(result_frame) = c("FGWQSR Estimate","Bootstrap Mean", paste0((1-level)/2, " %"),
+#'                              paste0( 1-(1-level)/2, " %"))
+#'
+#'
+#'   # bootstrap_results = boot::boot(data = object$data,
+#'   #                                statistic = function(data,i)
+#'   #                                  {
+#'   #                                  boot_data = data[i,]
+#'   #
+#'   #                                  f = as.character(formula)
+#'   #                                  outcome = f[2]
+#'   #                                  vars = clean_vars(gsub("\n", "", f[3]))
+#'   #
+#'   #                                  initial_cov_vals = get_cov_initial_vals(formula = object$formula,
+#'   #                                                                          data = boot_data,
+#'   #                                                                          quantiles = object$quantiles)
+#'   #                                  # we fit on one core -- parallelize through bootstrap iterations
+#'   #                                  fg_fit = fit_fgwqsr_MO(formula = object$formula,
+#'   #                                                         data = boot_data,
+#'   #                                                         quantiles = object$quantiles,
+#'   #                                                         return_y = F,
+#'   #                                                         return_data = F,
+#'   #                                                         initial_cov_vals = initial_cov_vals,
+#'   #                                                         optim_control_list = object$optim_control_list,
+#'   #                                                         cores = 1)
+#'   #
+#'   #                                  sol_logistic = fg_fit$ML_sol$par
+#'   #                                  names(sol_logistic) = c("Intercept", names(boot_data)[-1])
+#'   #
+#'   #                                  # get group effects
+#'   #                                  group_effects = vector(mode = "numeric", length = length(vars$mixture))
+#'   #
+#'   #                                  run_ind = 2 # first element is intercept
+#'   #                                  for(i in 1: length(vars$mixture))
+#'   #                                  {
+#'   #                                    group_effects[i] = sum(sol_logistic[run_ind: (run_ind + length(vars$mixture[[i]]) -1)])
+#'   #                                    run_ind = run_ind + length(vars$mixture[[i]])
+#'   #                                  }
+#'   #
+#'   #                                  names(group_effects) = paste("Mixture Effect", 1:length(vars$mixture))
+#'   #
+#'   #                                  return(c(group_effects,sol_logistic ))
+#'   #                                },
+#'   #                                strata = object$data[, outcome],
+#'   #                                R = 10, )
+#'
+#'   # result_frame = matrix(nrow = ncol(bootstrap_results$t), ncol = 3)
+#'   # for(i in 1:ncol(bootstrap_results$t))
+#'   # {
+#'   #   result_frame[i,1] = bootstrap_results$t0[i]
+#'   #   result_frame[i,2] = bootstrap_results$t[,i] %>% mean
+#'   #   result_frame[i,3:4] = boot::boot.ci(bootstrap_results,type = "perc",
+#'   #                                       index = i, conf = level)$percent[1,4:5]
+#'   # }
+#'   #
+#'   # rownames(result_frame) = names(bootstrap_results$t0)
+#'   # colnames(result_frame) = c("FGWQSR Estimate","Bootstrap Mean", paste0((1-level)/2, " %"),
+#'   #                            paste0( 1-(1-level)/2, " %"))
+#'
+#'   return(list(result_frame = result_frame,
+#'               bootstrap_results = boot_results))
+#' }
 
