@@ -257,6 +257,8 @@ We can see the model summary using the call `summary()`
 
 summary(fgwqsr_fit)
 
+confint(fgwqsr_fit, verbose = T, boot_reps = 100)
+
 ```
 <br>
 We can compare the true underlying group indices and chemical weights with their estimates, along with if the correct inference is made.  Note that dashes are inserted for the true weights of group 2, since the true underlying group index is null (thus, the weights are unidentifiable).
@@ -290,7 +292,7 @@ As mentioned earlier, the `/` character in the model formula sent to `fgwqsr()` 
 <br>
 
 ```{r}
-set.seed(111)
+set.seed(11)
 # create adjusting covariates
 weight = rnorm(n = n, mean = 68, sd = 2.5)
 city = sample(c("city_1", "city_2", "city_3"), size = n, replace = T)

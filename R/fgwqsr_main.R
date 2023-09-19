@@ -506,7 +506,7 @@ get_optimization_region = function(logistic_param, vars)
               optimization_upper = optimization_upper))
 }
 
-fgwqsr_ll = function(B,design_matrix, y_vec, vars) # log likelihood
+fgwqsr_logistic_ll = function(B,design_matrix, y_vec, vars) # log likelihood
 {
   B_logistic = make_beta_vec(B,vars) # to evaluate special Beta vector
 
@@ -514,6 +514,24 @@ fgwqsr_ll = function(B,design_matrix, y_vec, vars) # log likelihood
   # will return negative of log likelihood -- what we need for optim
 
   return(ll)
+}
+
+fgwqsr_poisson_ll = function(B,design_matrix, y_vec, vars) # log likelihood
+{
+  new_B = make_beta_vec(B,vars) # to evaluate special Beta vector
+
+  ll = poisson_neg_ll(new_B,design_matrix, y_vec)
+  # will return negative of log likelihood -- what we need for optim
+  return(ll)
+}
+
+fgwqsr_ols_loss = function(B,design_matrix, y_vec, vars) # log likelihood
+{
+  new_B = make_beta_vec(B,vars) # to evaluate special Beta vector
+
+  loss = ols_loss(new_B,design_matrix, y_vec)
+
+  return(loss)
 }
 
 logistic_neg_ll = function(B,design_matrix, y_vec) # log likelihood
@@ -524,24 +542,53 @@ logistic_neg_ll = function(B,design_matrix, y_vec) # log likelihood
 
   return(ll)
 }
-#
-# fast_ll = function(B,design_matrix, y_vec, vars) # log likelihood
-# {
-#   # this function is for running one iteration of L-BFGS-B constrained optim
-#   # split up log likelihood
-#
-#   ll_1 = (y_vec * crossprod(t(design_matrix), B)) %>% sum
-#   ll_2 = (apply(design_matrix, MARGIN = 1, FUN = function(x) log(1+exp(crossprod(x, B))))) %>% sum
-#
-#   ll = ll_1 - ll_2
-#
-#   return(-1*ll) # -1 is for optim call
-# }
+
+poisson_neg_ll = function(B,design_matrix, y_vec) # log likelihood
+{
+  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1))
+
+  ll = sum(exp(lin_pred) - y_vec * lin_pred + log(factorial(y_vec)))
+
+  return(ll)
+}
+
+ols_loss = function(B,design_matrix, y_vec) # log likelihood
+{
+  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1))
+  loss = as.numeric(crossprod(y_vec - lin_pred, y_vec - lin_pred))
+  return(loss)
+}
+
+ols_gr = function(B,design_matrix, y_vec) # log likelihood
+{
+  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1))
+  gr =as.numeric(-2*crossprod(y_vec - lin_pred, design_matrix))
+  return(gr)
+}
+
+mvn_neg_ll = function(B,design_matrix, y_vec, sigma_2) # log likelihood
+{
+  n = nrow(design_matrix)
+
+  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1))
+
+  ll = -(n/2)*log(2 * pi) - (n/2)*log(sigma_2) -
+    (1/(2*sigma_2)) * crossprod(y_vec -lin_pred, y_vec -lin_pred)
+
+  return(-1*ll)
+}
 
 logistic_neg_gr = function(B,design_matrix, y_vec)
 {
-
   gr = colSums(design_matrix * (c(y_vec - pracma::sigmoid(crossprod(t(design_matrix),B)))))
+  return(-1*gr)
+}
+
+poisson_neg_gr = function(B,design_matrix, y_vec)
+{
+  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1))
+
+  gr = as.vector(crossprod(design_matrix, matrix(y_vec, ncol = 1)) - crossprod(design_matrix, exp(lin_pred)))
 
   return(-1*gr)
 }
@@ -555,6 +602,28 @@ logistic_hessian = function(B,design_matrix)
   D = (pracma::sigmoid(z)*(1-pracma::sigmoid(z))) %>% as.vector
 
   hessian = -1*crossprod(design_matrix, (design_matrix * D))
+
+  return(hessian)
+}
+
+poisson_hessian = function(B,design_matrix)
+{
+  design_matrix = design_matrix %>% as.matrix
+
+  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1))
+
+  W = lin_pred %>% exp %>% as.numeric %>% diag
+
+  hessian = -1*crossprod(design_matrix, W) %*% design_matrix
+
+  return(hessian)
+}
+
+gaussian_hessian = function(B,design_matrix, sigma_2)
+{
+  design_matrix = design_matrix %>% as.matrix
+
+  hessian = -(1/sigma_2) * crossprod(design_matrix, design_matrix)
 
   return(hessian)
 }
@@ -612,7 +681,7 @@ logistic_hessian = function(B,design_matrix)
 # models when exluding a pollutant with weight 0 was nonzero.
 
 # this happens on few occasions, we can manually make the LRT
-fit_fgwqsr_hybrid = function(formula, data, quantiles, output_hessian = F,
+fit_fgwqsr_hybrid = function(formula, data, quantiles,family, output_hessian = F,
                       initial_vals, return_y = F, return_data = F,
                       optim_control_list)
 {
@@ -655,10 +724,20 @@ fit_fgwqsr_hybrid = function(formula, data, quantiles, output_hessian = F,
   y_vec = data[,1] # y outcome vector to send to likelihood, will always be first col
   design_matrix = cbind(rep(1, nrow(data)), data[, -1]) %>% as.matrix # the first column of data has y value
 
+  fn_hyb = fgwqsr_logistic_ll
+  if(family == "poisson")
+  {
+    fn_hyb = fgwqsr_poisson_ll
+  }else if(family == "gaussian") # NEED TO MODIFY THIS!!!
+  {
+    fn_hyb = fgwqsr_ols_loss
+  }
+
+
   # first perform a few initial iterations in reparameterization
 
   ML_sol = stats::optim(par = initial_vals,
-                 fn = fgwqsr_ll,
+                 fn = fn_hyb,
                  design_matrix = design_matrix,
                  y_vec = y_vec,
                  vars = vars,
@@ -678,15 +757,38 @@ fit_fgwqsr_hybrid = function(formula, data, quantiles, output_hessian = F,
 
   initial_vals = ML_sol_logistic_param
 
+  # adjust log likelihood and gradient by family
+  # assume first logistic regression
+  fn = logistic_neg_ll
+  gr = logistic_neg_gr
+  if(family == "poisson")
+  {
+    fn = poisson_neg_ll
+    gr = poisson_neg_gr
+  }else if(family == "gaussian") # NEED TO MODIFY THIS!!!
+  {
+    fn = ols_loss
+    gr = ols_gr
+  }
+
   final_fit = stats::optim(par = initial_vals,
-                    fn = logistic_neg_ll,
-                    gr = logistic_neg_gr,
+                    fn = fn,
+                    gr = gr,
                     design_matrix = design_matrix,
                     y_vec = y_vec,
                     method = "L-BFGS-B",
                     lower = optimization_region$optimization_lower,
                     upper = optimization_region$optimization_upper,
                     control = optim_control_list)
+
+  # if gaussian, compute sigma^2 and calculate log likelihood
+  if(family == "gaussian")
+  {
+    sigma_2 = sum((y_vec - tcrossprod(design_matrix,matrix(final_fit$par, nrow = 1)))^2) / nrow(design_matrix)
+
+    # change loss value to log likelihood value
+    final_fit$value = mvn_neg_ll(final_fit$par, design_matrix, y_vec, sigma_2)
+  }
 
   return_list = list(ML_sol= final_fit, vars = vars)
 
@@ -704,7 +806,7 @@ fit_fgwqsr_hybrid = function(formula, data, quantiles, output_hessian = F,
 }
 
 # MO stands for multiple optim
-fit_fgwqsr_MO = function(formula, data, quantiles, output_hessian = F,
+fit_fgwqsr_MO = function(formula, data, quantiles,family, output_hessian = F,
                       initial_cov_vals, return_y = F, return_data = F,
                       optim_control_list, cores)
 {
@@ -751,6 +853,20 @@ fit_fgwqsr_MO = function(formula, data, quantiles, output_hessian = F,
   optimization_regions = generate_optimization_regions(vars = vars,
                                                        num_confounders = num_confounders)
 
+  # adjust log likelihood and gradient by family
+  # assume first logistic regression
+  fn = logistic_neg_ll
+  gr = logistic_neg_gr
+  if(family == "poisson")
+  {
+    fn = poisson_neg_ll
+    gr = poisson_neg_gr
+  }else if(family == "gaussian")
+  {
+    fn = ols_loss
+    gr = ols_gr
+  }
+
   future::plan(future::multisession, workers = cores)
 
   fits = future.apply::future_lapply(1: length(optimization_regions),
@@ -760,8 +876,8 @@ fit_fgwqsr_MO = function(formula, data, quantiles, output_hessian = F,
                                                                             optimization_regions[[i]]$upper)
 
                                        sol = stats::optim(par = initial_vals,
-                                                                fn = logistic_neg_ll,
-                                                                gr = logistic_neg_gr,
+                                                                fn = fn,
+                                                                gr = gr,
                                                                 design_matrix = design_matrix,
                                                                 y_vec = y_vec,
                                                                 method = "L-BFGS-B",
@@ -773,27 +889,23 @@ fit_fgwqsr_MO = function(formula, data, quantiles, output_hessian = F,
 
   future::plan(future::sequential)
 
-  # fits = vector(mode = "list", length = length(optimization_regions))
-  # # iterate over subregions -- no hybridized approach -- ensures correct ll optimization
-  # for(i in 1: length(fits))
-  # {
-  #   initial_vals = generate_initial_vals(optimization_regions[[i]]$lower,
-  #                                        optimization_regions[[i]]$upper)
-  #
-  #   fits[[i]] = stats::optim(par = initial_vals,
-  #                            fn = logistic_neg_ll,
-  #                            gr = logistic_neg_gr,
-  #                            design_matrix = design_matrix,
-  #                            y_vec = y_vec,
-  #                            method = "L-BFGS-B",
-  #                            lower = optimization_regions[[i]]$lower,
-  #                            upper = optimization_regions[[i]]$upper,
-  #                            control = optim_control_list)
-  # }
-
   final_fit = fits[[which.min(sapply(fits, "[[", 2))]]
 
+  # if gaussian, compute sigma^2 and calculate log likelihood
+  if(family == "gaussian")
+  {
+    sigma_2 = sum((y_vec - tcrossprod(design_matrix,matrix(final_fit$par, nrow = 1)))^2) / nrow(design_matrix)
+
+    # change loss value to log likelihood value
+    final_fit$value = mvn_neg_ll(final_fit$par, design_matrix, y_vec, sigma_2)
+  }
+
   return_list = list(ML_sol= final_fit, vars = vars)
+
+  if(family == "gaussian")
+  {
+    return_list$residual_var = sum((y_vec - tcrossprod(design_matrix,matrix(final_fit$par, nrow = 1)))^2) / nrow(design_matrix)
+  }
 
   # return y and new data only for fist FG formula.
 
@@ -855,7 +967,7 @@ generate_optimization_regions = function(vars, num_confounders)
   return(opt_list)
 }
 
-get_cov_initial_vals = function(formula, data, quantiles)
+get_cov_initial_vals = function(formula, data, quantiles, family)
 {
   # get initial values for intercept and confounder estimates using quantile
   # logistic regression
@@ -884,7 +996,7 @@ get_cov_initial_vals = function(formula, data, quantiles)
 
   glm_formula = paste(y, "~ .") %>% stats::formula()
 
-  unconstr_glm = stats::glm(formula =glm_formula, data = data, family = stats::binomial)
+  unconstr_glm = stats::glm(formula =glm_formula, data = data, family = family)
 
   glm_coefs = stats::coef(unconstr_glm)
 
@@ -903,7 +1015,7 @@ get_cov_initial_vals = function(formula, data, quantiles)
 
 }
 
-fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_control_list)
+fgwqsr_caller = function(formulas, data, quantiles, family, vars, verbose, cores, optim_control_list)
 {
   if(verbose == TRUE) # call to progress
   {
@@ -913,7 +1025,8 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
   # get initial vals for intercept and adjusting covariates
   initial_cov_vals = get_cov_initial_vals(formula = stats::formula(formulas[[1]]),
                                           data = data,
-                                          quantiles = quantiles)
+                                          quantiles = quantiles,
+                                          family = family)
   # initialize for storing results
   fits = vector(mode = "list", length = length(formulas))
 
@@ -922,6 +1035,7 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
   fits[[1]] = fit_fgwqsr_MO(formula = stats::formula(formulas[[1]]),
                             data = data,
                             quantiles = quantiles,
+                            family = family,
                             return_y = T,
                             return_data = T, initial_cov_vals = initial_cov_vals,
                             optim_control_list = optim_control_list,
@@ -957,7 +1071,7 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
     # if only a 1 group LRT with only 1 mixture group in formula
     if((length(vars$mixture) == 1) && (x == (vars$mixture %>% unlist %>% length %>% sum(2))))
     {
-      result = stats::logLik(stats::glm(stats::formula(paste(formulas[x], "1")), data = data, family = "binomial"))[1]
+      result = stats::logLik(stats::glm(stats::formula(paste(formulas[x], "1")), data = data, family = family))[1]
     }else # if either single pollutant LRT or 1 group LRT (more than 1 mixture group)
     {
       if(formulas[[x]] == "0 weight")
@@ -966,6 +1080,7 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
       }else
       {
         result = -1*fit_fgwqsr_hybrid(stats::formula(formulas[x]), data, quantiles,
+                                      family = family,
                                       initial_vals = initial_vals[[x-1]],
                                       optim_control_list = optim_control_list)$ML_sol$value
       }
@@ -987,11 +1102,13 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
 #' Fit a FGWQSR Model
 #'
 #' @param formula A formula for model fitting of FGWQSR.  Please see details for formula construction.
-#' @param data  dataframe that contains all covariates and the outcome data.
+#' @param data  Dataframe that contains all covariates and the outcome data.
 #' Column names of dataframe should match those referenced in the model formula.
-#' @param quantiles number of quantiles to quantize the exposure variables in the
+#' @param quantiles Number of quantiles to quantize the exposure variables in the
 #' mixture portion of the model.  Default value is 5.
-#' @param n_mvn_sims defines resolution for simulated null distribution for group index and single
+#' @param family String, one of either \code{'binomial'}, \code{'gaussian'}, or \code{'poisson'} for binary,
+#' continuous, or count outcomes respectively.  The link function for the binomial outcome is the logit link.
+#' @param n_mvn_sims Defines resolution for simulated null distribution for group index and single
 #' chemical LRTs.  Default is 10,000.
 #' @param zero_threshold_cutoff Value within (0,.5] that defines how often
 #' parameters estimated close to the boundary of the parameter
@@ -1004,11 +1121,11 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
 #' The default is set to zero_tolerance_threshold = 0.5.
 #' @param verbose Displays messages and progress bar while fitting FGWQSR model.
 #'  Default is TRUE.
-#' @param cores number of cores to parallelize on for fitting nested models and
+#' @param cores Number of cores to parallelize on for fitting nested models and
 #' simulated null LRT distributions.
 #'  Default is number of available cores on user device.
-#' @param optim_control_list option to supply control options to optim.
-#' @return list with attributes from fgwqsr model fitting.
+#' @param optim_control_list Option to supply control options to optim.
+#' @return List with attributes from fgwqsr model fitting.
 #' @description
 #' Fits a group signed constrained logistic regression with
 #' inference for both group indices and single chemical effects on an entire
@@ -1018,7 +1135,7 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
 #' formulas in lm and glm, as it needs to denote mixture group arrangement.
 #' Three special characters are used in fgwqsr formulas:
 #' \itemize{  \item \code{|} - denotes the boundary of a mixture group, used to
-#' seperate chemicals within a mixture group.
+#' separate chemicals within a mixture group.
 #'    \item  \code{/} - denotes the end of the mixture group specification,
 #'    adjusting covariates can be added to the formula after
 #' this character.  If no adjusting covariates, do not need to specify.
@@ -1032,7 +1149,9 @@ fgwqsr_caller = function(formulas, data, quantiles,vars, verbose, cores, optim_c
 #' @seealso \code{\link{summary.fgwqsr}}
 #' @export
 
-fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
+fgwqsr = function(formula, data, quantiles = 5,
+                  family = "binomial",
+                  n_mvn_sims = 10000,
                   zero_threshold_cutoff = .5, verbose = T,
                   cores = future::availableCores(),
                   optim_control_list = list(maxit = 1000, factr = 1E-12, fnscale = 1))
@@ -1095,33 +1214,62 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
     }
   }
 
-  # check that outcome variable is a 0 1 numeric variable
-  if(!is.numeric(data[f[2]] %>% unlist))
-    # check that the vector is numeric
+  # check family argument
+
+  if(!(family %in% c("binomial", "gaussian", "poisson")))
   {
-    stop("The outcome variable must be coded as a numeric vector with
-         0 denoting controls and 1 denoting cases")
-  }else if(sum(unique(data[f[2]] %>% unlist) %in% c(0,1)) != 2)
-    # if the vector is numeric, make sure its elements are only 0s or 1s
-  {
-    stop("The outcome variable must be coded as a numeric vector with
-         0 denoting controls and 1 denoting cases")
+    stop("The `family` argument must be one of 'binomial', 'poisson', or 'gaussian'")
   }
+
+
 
   # check if the outcome has both cases and controls -- make sure percentage
   # of cases is at least greater than 1%
-
-  if(sum(data[f[2]]) == 0) # if only 0s in outcome vector (controls)
+  if(family == "binomial")
   {
-    stop("Outcome variable only contains controls, please check outcome variable coding.")
+    # check that outcome variable is a 0 1 numeric variable
+    if(!is.numeric(data[f[2]] %>% unlist))
+      # check that the vector is numeric
+    {
+      stop("The outcome variable must be coded as a numeric vector with
+         0 denoting controls and 1 denoting cases")
+    }else if((sum(unique(data[f[2]] %>% unlist) %in% c(0,1)) != 2) && (family == "binomial"))
+      # if the vector is numeric, make sure its elements are only 0s or 1s
+    {
+      stop("The outcome variable must be coded as a numeric vector with
+         0 denoting controls and 1 denoting cases")
+    }
 
-  } else if (sum(data[f[2]]) == nrow(data))# if only 1s in outcome vector (cases)
-  {
-    stop("Outcome variable only contains cases, please check outcome variable coding.")
+    if(sum(data[f[2]]) == 0) # if only 0s in outcome vector (controls)
+    {
+      stop("Outcome variable only contains controls, please check outcome variable coding.")
 
-  } else if(sum(data[f[2]]) / nrow(data) < .05)
+    } else if (sum(data[f[2]]) == nrow(data))# if only 1s in outcome vector (cases)
+    {
+      stop("Outcome variable only contains cases, please check outcome variable coding.")
+
+    } else if(sum(data[f[2]]) / nrow(data) < .05)
+    {
+      message("Alert: Less than 5% of observations are cases.")
+    }
+  }
+
+  if(family == "poisson")
   {
-    message("Alert: Less than 5% of observations are cases.")
+    min_y = min(data[f[2]])
+
+    if(min_y < 0)
+    {
+      stop("Count outcome for `poisson` family must be nonnegative!  Negative counts are present in the outcome.")
+    }
+
+    # cast outcome to integer to ensure counts
+    if(sapply(unlist(data[f[2]]), FUN = function(x) !is.integer(x)) %>% sum !=0)
+    {
+      message("Casting outcome variable to nonnegative integer type (counts).")
+      data[f[2]] = data[f[2]] %>% unlist %>% as.integer
+    }
+
   }
 
 
@@ -1201,12 +1349,12 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
   {
     progressr::handlers("progress")
     message("Fitting full and nested FGWQSR models...")
-    progressr::with_progress(fits <- fgwqsr_caller(formulas, data, quantiles,vars, verbose,
+    progressr::with_progress(fits <- fgwqsr_caller(formulas, data, quantiles,family,vars, verbose,
                                         cores, optim_control_list))
     message("\nGenerating LRT distributions under H0...")
   }else
   {
-    fits <- fgwqsr_caller(formulas, data, quantiles,vars, verbose, cores, optim_control_list)
+    fits <- fgwqsr_caller(formulas, data, quantiles,family, vars, verbose, cores, optim_control_list)
   }
 
   # full model
@@ -1230,8 +1378,24 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
   # compute inverse of observed fisher info at constrained logistic regression
   # ML solution
   design_matrix = cbind(intercept = rep(1, nrow(new_data)),new_data[,-1])
-  observed_fisher = -1*logistic_hessian(B = params_logistic_form,
-                                        design_matrix = design_matrix)
+
+  # compute fisher information based on proper family
+  observed_fisher = NULL
+  if(family == "binomial")
+  {
+    observed_fisher = -1*logistic_hessian(B = params_logistic_form,
+                                          design_matrix = design_matrix)
+  }else if(family == "poisson")
+  {
+    observed_fisher = -1*poisson_hessian(B = params_logistic_form,
+                                         design_matrix = design_matrix)
+  }else # if gaussian
+  {
+    observed_fisher = -1*gaussian_hessian(B = params_logistic_form,
+                                          design_matrix = design_matrix,
+                                          sigma_2 = fgwqsr_fit$residual_var)
+  }
+  # compute inverse of observed fisher information
   cov_mat = pracma::pinv(observed_fisher)
 
   # get ML sol in group index and weight formulation
@@ -1296,6 +1460,7 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
                      n = n,
                      ll = full_ll_val,
                      formula = formula,
+                     family = family,
                      aic = aic,
                      bic = bic,
                      vars = vars,
@@ -1307,6 +1472,10 @@ fgwqsr = function(formula, data, quantiles = 5, n_mvn_sims = 10000,
                      quantiles = quantiles,
                      zero_threshold_cutoff = zero_threshold_cutoff,
                      optim_control_list = optim_control_list)
+  if(family == "gaussian")
+  {
+    return_list$residual_var = fgwqsr_fit$residual_var
+  }
 
   class(return_list) = "fgwqsr"
 
@@ -1350,7 +1519,8 @@ print.fgwqsr = function(object,...)
     digits = passed_args[[1]]
   }
 
-  cat("\nCall: \nFGWQSR with formula '",gsub("  ", "",paste(format(object$formula), collapse = "")),"' on n = ",object$n," observations.", sep = "" )
+  cat("\nCall: \nFGWQSR with formula '",gsub("  ", "",paste(format(object$formula), collapse = "")),"'on n = ",object$n,
+      " observations and family = '", object$family, "'.", sep = "" )
   cat("\n\n", object$n_mvn_sims, " samples used for simulated LRT distirbution.",sep = "")
   cat("\n\nLog Likelihood:", object$ll, "| AIC:",object$aic, "| BIC:", object$bic)
   cat("\n\nEstimates and Inference for Group Index Effects\n\n", sep = "")
@@ -1384,6 +1554,11 @@ print.fgwqsr = function(object,...)
                       P.values = T,
                       has.Pvalue = T)
   cat("\nSignificance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' \n")
+
+  if(object$family == "gaussian")
+  {
+    cat(paste("\n(Dispersion parameter for gaussian family taken to be ", round(object$residual_var,digits), ")\n", sep = ""))
+  }
   cat("\nTotal runtime for FGWQSR: ",
       ifelse(object$total_time < 60,paste(round(object$total_time,2), "seconds"),
              paste(round(object$total_time/60, 2), "minutes")), "on",object$cores, "cores." )

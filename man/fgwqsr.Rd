@@ -8,6 +8,7 @@ fgwqsr(
   formula,
   data,
   quantiles = 5,
+  family = "binomial",
   n_mvn_sims = 10000,
   zero_threshold_cutoff = 0.5,
   verbose = T,
@@ -18,13 +19,16 @@ fgwqsr(
 \arguments{
 \item{formula}{A formula for model fitting of FGWQSR.  Please see details for formula construction.}
 
-\item{data}{dataframe that contains all covariates and the outcome data.
+\item{data}{Dataframe that contains all covariates and the outcome data.
 Column names of dataframe should match those referenced in the model formula.}
 
-\item{quantiles}{number of quantiles to quantize the exposure variables in the
+\item{quantiles}{Number of quantiles to quantize the exposure variables in the
 mixture portion of the model.  Default value is 5.}
 
-\item{n_mvn_sims}{defines resolution for simulated null distribution for group index and single
+\item{family}{String, one of either \code{'binomial'}, \code{'gaussian'}, or \code{'poisson'} for binary,
+continuous, or count outcomes respectively.  The link function for the binomial outcome is the logit link.}
+
+\item{n_mvn_sims}{Defines resolution for simulated null distribution for group index and single
 chemical LRTs.  Default is 10,000.}
 
 \item{zero_threshold_cutoff}{Value within (0,.5] that defines how often
@@ -40,14 +44,14 @@ The default is set to zero_tolerance_threshold = 0.5.}
 \item{verbose}{Displays messages and progress bar while fitting FGWQSR model.
 Default is TRUE.}
 
-\item{cores}{number of cores to parallelize on for fitting nested models and
+\item{cores}{Number of cores to parallelize on for fitting nested models and
 simulated null LRT distributions.
  Default is number of available cores on user device.}
 
-\item{optim_control_list}{option to supply control options to optim.}
+\item{optim_control_list}{Option to supply control options to optim.}
 }
 \value{
-list with attributes from fgwqsr model fitting.
+List with attributes from fgwqsr model fitting.
 }
 \description{
 Fits a group signed constrained logistic regression with
@@ -59,7 +63,7 @@ The model formula that is passed to fgwqsr() is different than traditional
 formulas in lm and glm, as it needs to denote mixture group arrangement.
 Three special characters are used in fgwqsr formulas:
 \itemize{  \item \code{|} - denotes the boundary of a mixture group, used to
-seperate chemicals within a mixture group.
+separate chemicals within a mixture group.
    \item  \code{/} - denotes the end of the mixture group specification,
    adjusting covariates can be added to the formula after
 this character.  If no adjusting covariates, do not need to specify.
