@@ -520,7 +520,7 @@ fgwqsr_poisson_ll = function(B,design_matrix, y_vec, vars) # log likelihood
 {
   new_B = make_beta_vec(B,vars) # to evaluate special Beta vector
 
-  ll = poisson_neg_ll(new_B,design_matrix, y_vec)
+  ll = poisson_neg_ll_WO_factorial(new_B,design_matrix, y_vec)
   # will return negative of log likelihood -- what we need for optim
   return(ll)
 }
@@ -543,11 +543,20 @@ logistic_neg_ll = function(B,design_matrix, y_vec) # log likelihood
   return(ll)
 }
 
+poisson_neg_ll_WO_factorial = function(B,design_matrix, y_vec) # log likelihood
+{
+  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1))
+
+  ll = sum(exp(lin_pred) - y_vec * lin_pred)
+
+  return(ll)
+}
+
 poisson_neg_ll = function(B,design_matrix, y_vec) # log likelihood
 {
   lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1))
 
-  ll = sum(exp(lin_pred) - y_vec * lin_pred + log(factorial(y_vec)))
+  ll = sum(exp(lin_pred) - y_vec * lin_pred + lfactorial(y_vec))
 
   return(ll)
 }
@@ -763,7 +772,7 @@ fit_fgwqsr_hybrid = function(formula, data, quantiles,family, output_hessian = F
   gr = logistic_neg_gr
   if(family == "poisson")
   {
-    fn = poisson_neg_ll
+    fn = poisson_neg_ll_WO_factorial
     gr = poisson_neg_gr
   }else if(family == "gaussian") # NEED TO MODIFY THIS!!!
   {
@@ -771,23 +780,59 @@ fit_fgwqsr_hybrid = function(formula, data, quantiles,family, output_hessian = F
     gr = ols_gr
   }
 
-  final_fit = stats::optim(par = initial_vals,
-                    fn = fn,
-                    gr = gr,
-                    design_matrix = design_matrix,
-                    y_vec = y_vec,
-                    method = "L-BFGS-B",
-                    lower = optimization_region$optimization_lower,
-                    upper = optimization_region$optimization_upper,
-                    control = optim_control_list)
+  final_fit = NULL
+
+  # set these -- adjusted in loop
+  fn_scale = 1
+  counter = 1
+
+  max_iter = 30
+
+  # loop in case solution does not converge
+  # if does not converge,
+  while(is.null(final_fit))
+  {
+
+    final_fit = tryCatch(expr =
+                           {
+                             stats::optim(par = initial_vals,
+                                          fn = fn,
+                                          gr = gr,
+                                          design_matrix = design_matrix,
+                                          y_vec = y_vec,
+                                          method = "L-BFGS-B",
+                                          lower = optimization_region$optimization_lower,
+                                          upper = optimization_region$optimization_upper,
+                                          control = optim_control_list)
+                           },
+                         error = function(err)
+                         {
+                           NULL
+                         })
+    if(counter == max_iter)
+    {
+      stop("FGWQSR failed to converge.")
+    }
+
+    # increment scale and counter
+    fn_scale = 1*10^(counter)
+    counter = counter + 1
+  }
+
+
+
 
   # if gaussian, compute sigma^2 and calculate log likelihood
   if(family == "gaussian")
   {
-    sigma_2 = sum((y_vec - tcrossprod(design_matrix,matrix(final_fit$par, nrow = 1)))^2) / nrow(design_matrix)
+    sigma_2 = sum((y_vec - tcrossprod(design_matrix,matrix(final_fit$par, nrow = 1)))^2) /
+      (nrow(design_matrix) - ncol(design_matrix))
 
     # change loss value to log likelihood value
     final_fit$value = mvn_neg_ll(final_fit$par, design_matrix, y_vec, sigma_2)
+  }else if(family == "poisson") # evaluate ll with factorial term
+  {
+    final_fit$value = poisson_neg_ll(final_fit$par, design_matrix, y_vec)
   }
 
   return_list = list(ML_sol= final_fit, vars = vars)
@@ -859,7 +904,7 @@ fit_fgwqsr_MO = function(formula, data, quantiles,family, output_hessian = F,
   gr = logistic_neg_gr
   if(family == "poisson")
   {
-    fn = poisson_neg_ll
+    fn = poisson_neg_ll_WO_factorial
     gr = poisson_neg_gr
   }else if(family == "gaussian")
   {
@@ -872,39 +917,73 @@ fit_fgwqsr_MO = function(formula, data, quantiles,family, output_hessian = F,
   fits = future.apply::future_lapply(1: length(optimization_regions),
                                      FUN = function(i)
                                      {
-                                       initial_vals = generate_initial_vals(optimization_regions[[i]]$lower,
-                                                                            optimization_regions[[i]]$upper)
+                                       initial_vals[2:(ncol(data) - num_confounders)] = generate_initial_vals(optimization_regions[[i]]$lower,
+                                                                                                              optimization_regions[[i]]$upper)[2:(ncol(data) - num_confounders)]
+                                       sol = NULL
 
-                                       sol = stats::optim(par = initial_vals,
-                                                                fn = fn,
-                                                                gr = gr,
-                                                                design_matrix = design_matrix,
-                                                                y_vec = y_vec,
-                                                                method = "L-BFGS-B",
-                                                                lower = optimization_regions[[i]]$lower,
-                                                                upper = optimization_regions[[i]]$upper,
-                                                                control = optim_control_list)
+                                       # set these -- adjusted in loop
+                                       fn_scale = 1
+                                       counter = 1
+
+                                       max_iter = 30
+
+                                       while(is.null(sol) && counter <= max_iter )
+                                       {
+
+                                         sol = tryCatch(expr =
+                                                          {
+                                                            stats::optim(par = initial_vals,
+                                                                         fn = fn,
+                                                                         gr = gr,
+                                                                         design_matrix = design_matrix,
+                                                                         y_vec = y_vec,
+                                                                         method = "L-BFGS-B",
+                                                                         lower = optimization_regions[[i]]$lower,
+                                                                         upper = optimization_regions[[i]]$upper,
+                                                                         control = c(optim_control_list, fnscale = fn_scale))
+                                                          },
+                                                        error = function(err)
+                                                        {
+                                                          NULL
+                                                        })
+
+                                         fn_scale = 1*10^(counter)
+                                         counter = counter + 1
+                                       }
+
+                                       if(counter == max_iter)
+                                       {
+                                         warning("FGWQSR failed to converge in a particular subregion.
+                                                   \nProceeding without evaluating likelihood in this region.")
+                                       }
                                        return(sol)
                                      })
 
   future::plan(future::sequential)
+
+  fits = fits[lengths(fits) != 0]
 
   final_fit = fits[[which.min(sapply(fits, "[[", 2))]]
 
   # if gaussian, compute sigma^2 and calculate log likelihood
   if(family == "gaussian")
   {
-    sigma_2 = sum((y_vec - tcrossprod(design_matrix,matrix(final_fit$par, nrow = 1)))^2) / nrow(design_matrix)
+    sigma_2 = sum((y_vec - tcrossprod(design_matrix,matrix(final_fit$par, nrow = 1)))^2) /
+      (nrow(design_matrix) - ncol(design_matrix))
 
     # change loss value to log likelihood value
     final_fit$value = mvn_neg_ll(final_fit$par, design_matrix, y_vec, sigma_2)
+  }else if(family == "poisson") # evaluate ll with factorial term
+  {
+    final_fit$value = poisson_neg_ll(final_fit$par, design_matrix, y_vec)
   }
 
   return_list = list(ML_sol= final_fit, vars = vars)
 
   if(family == "gaussian")
   {
-    return_list$residual_var = sum((y_vec - tcrossprod(design_matrix,matrix(final_fit$par, nrow = 1)))^2) / nrow(design_matrix)
+    return_list$residual_var = sum((y_vec - tcrossprod(design_matrix,matrix(final_fit$par, nrow = 1)))^2) /
+      (nrow(design_matrix) - ncol(design_matrix))
   }
 
   # return y and new data only for fist FG formula.
@@ -1215,10 +1294,9 @@ fgwqsr = function(formula, data, quantiles = 5,
   }
 
   # check family argument
-
   if(!(family %in% c("binomial", "gaussian", "poisson")))
   {
-    stop("The `family` argument must be one of 'binomial', 'poisson', or 'gaussian'")
+    stop("The `family` argument must be one of 'binomial', 'poisson', or 'gaussian'.")
   }
 
 
@@ -1443,9 +1521,14 @@ fgwqsr = function(formula, data, quantiles = 5,
 
   full_ll_val = ll_models[1]
 
-  aic = -2*full_ll_val + 2*length(params_logistic_form)
+  # if gaussian, residual variance is estimated
+  aic = ifelse(family != "gaussian",
+               -2*full_ll_val + 2*length(params_logistic_form),
+               -2*full_ll_val + 2*(length(params_logistic_form) + 1))
 
-  bic = -2*full_ll_val + log(n)*length(params_logistic_form)
+  bic = ifelse(family != "gaussian",
+               -2*full_ll_val + log(n)*length(params_logistic_form),
+               -2*full_ll_val + log(n)*(length(params_logistic_form)+1))
 
   # when certain estimates are on the boundary, convergance code issues
   # message regarding LNSRCH == line search method.  Therefore, do not look at
@@ -1519,7 +1602,7 @@ print.fgwqsr = function(object,...)
     digits = passed_args[[1]]
   }
 
-  cat("\nCall: \nFGWQSR with formula '",gsub("  ", "",paste(format(object$formula), collapse = "")),"'on n = ",object$n,
+  cat("\nCall: \nFGWQSR with formula '",gsub("  ", "",paste(format(object$formula), collapse = "")),"' on n = ",object$n,
       " observations and family = '", object$family, "'.", sep = "" )
   cat("\n\n", object$n_mvn_sims, " samples used for simulated LRT distirbution.",sep = "")
   cat("\n\nLog Likelihood:", object$ll, "| AIC:",object$aic, "| BIC:", object$bic)

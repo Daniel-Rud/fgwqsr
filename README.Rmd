@@ -51,7 +51,7 @@ where
 * $z_{r,i}$ - measure of adjusting covariate $r$ for individual $i$
 
 
-subject to the constraints $$\sum_{k = 1}^{c_g} w_{g,k} =1, \ w_{g,k} \in (0,1)$$ without requiring \textbf{any data splitting}.  
+subject to the constraints $$\sum_{k = 1}^{c_g} w_{g,k} =1, \ w_{g,k} \in (0,1)$$ without requiring any data splitting
 
 <br>
 
@@ -61,7 +61,7 @@ subject to the constraints $$\sum_{k = 1}^{c_g} w_{g,k} =1, \ w_{g,k} \in (0,1)$
 
 You can install the development version of fgwqsr from [GitHub](https://github.com/) with:
 
-``` r
+```{r}
 # install.packages("devtools")
 devtools::install_github("Daniel-Rud/fgwqsr")
 ```
@@ -210,6 +210,8 @@ The `fgwqsr()` function has other options too:
 
 * `data` - a data frame object containing variable columnames referenced in model formula (cat vars do not need to be named with i. in column names).
 
+* `family` - can be one of 'binomial', 'gaussian' or 'poisson' for binary, continuous, and count outcomes respectivley.  
+
 * `quantiles` - number of quantiles to quantize the exposure variables in the mixture portion of the model.
 
 * `n_mvn_sims` - defines resolution for simulated null distribution for group index and single chemical LRTs.  Default is 10,000.   
@@ -245,6 +247,7 @@ Notice that we did not use the `/` character since we did not include adjusting 
 fgwqsr_fit = fgwqsr(formula = mod_formula,
                     data = data,
                     quantiles = 5,
+                    family = 'binomial',
                     n_mvn_sims = 10000,
                     verbose = T)
 
@@ -256,8 +259,6 @@ We can see the model summary using the call `summary()`
 ```{r}
 
 summary(fgwqsr_fit)
-
-confint(fgwqsr_fit, verbose = T, boot_reps = 100)
 
 ```
 <br>
@@ -331,6 +332,7 @@ mod_formula_adj = y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X
 fgwqsr_fit_adj = fgwqsr(formula = mod_formula_adj,
                     data = data,
                     quantiles = 5,
+                    family = 'binomial',
                     n_mvn_sims = 10000,
                     verbose = T)
 
