@@ -687,7 +687,7 @@ gaussian_hessian = function(B,design_matrix, sigma_2)
 # had LRTS that were nonzero.  The reason this occurred was because
 # the initial optimization, in the reparameterization, was not converging
 # in a particular subregion for a group, and the LLs between full and nested
-# models when exluding a pollutant with weight 0 was nonzero.
+# models when excluding a pollutant with weight 0 was nonzero.
 
 # this happens on few occasions, we can manually make the LRT
 fit_fgwqsr_hybrid = function(formula, data, quantiles,family, output_hessian = F,
@@ -1150,7 +1150,26 @@ fgwqsr_caller = function(formulas, data, quantiles, family, vars, verbose, cores
     # if only a 1 group LRT with only 1 mixture group in formula
     if((length(vars$mixture) == 1) && (x == (vars$mixture %>% unlist %>% length %>% sum(2))))
     {
-      result = stats::logLik(stats::glm(stats::formula(paste(formulas[x], "1")), data = data, family = family))[1]
+      if(is.null(vars$continuous) && is.null(vars$categorical))
+      {
+        result = stats::logLik(stats::glm(stats::formula(paste(formulas[x], "1")), data = data, family = family))[1]
+      }else # if no mixture elements but confounders
+      {
+        f = as.character(stats::as.formula((formulas[x])))
+
+        y = f[2]
+
+        # make copy with only y variable and confounders
+        data_copy = data[, c(y, vars$continuous, vars$categorical)]
+
+        if(length(vars$categorical)>0) # if there are categorical variables
+        {
+          data_copy = fastDummies::dummy_cols(data_copy, select_columns = vars$categorical, remove_first_dummy = TRUE,
+                                         remove_selected_columns = TRUE) # add dummy variables
+        }
+
+        result = stats::logLik(stats::glm(stats::formula(paste(y,"~ .")), data = data_copy, family = family))[1]
+      }
     }else # if either single pollutant LRT or 1 group LRT (more than 1 mixture group)
     {
       if(formulas[[x]] == "0 weight")
