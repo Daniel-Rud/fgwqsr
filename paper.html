@@ -384,18 +384,22 @@ Grouped Weighted Quantile Sum Regression</h1>
 <p>Researchers in the area of environmental epidemiology are often
 interested in analyzing the effects of chemical/pollutant exposures on
 diverse health related outcomes. Aside from fitting single constituent
-models, many of the popularized epidemiological methods for handeling
+models, many of the popularized epidemiological methods for handling
 chemical/pollutant <em>mixtures</em> are designed to accommodate the
-joint adjustment of multiple exposures. Models for handling mixtures are
-often designed with consideration to the exposure data, which often
+joint adjustment of multiple exposures <span class="citation">(Carrico
+et al. 2015; Wheeler et al. 2021a, 2021b; Hamra and Buckley 2018; Gibson
+et al. 2019; Joubert et al. 2022)</span>. Models for handling mixtures
+are often designed with consideration to the exposure data, which often
 possess high levels of correlation as a result of mixture constituents
 deriving from common sources. Out of the existing methods, the Weighted
 Quantile Sum Regression (WQSR) has been heavily popularized and utilized
-to examine associations between exposure mixtures and health outcomes.
-WQSR estimates group effects that measure the magnitude of effect of a
-mixture group and sets of group weights that measure the relative
-contribution of each constituent from a mixture group. The WQSR model
-can be mathematically formulated as <span class="math display">\[
+to examine associations between exposure mixtures and health outcomes
+<span class="citation">Wheeler et al. (2021b)</span>. WQSR estimates
+group effects that measure the magnitude of effect of a mixture group
+and sets of group weights that measure the relative contribution of each
+constituent from a mixture group. The WQSR model can be mathematically
+formulated as</p>
+<p><span class="math display">\[
 \begin{align}
 y_i &amp;\sim \text{Bernoulli}(\pi_i) \\
 \text{logit}(\pi_i) &amp;= c_0+ \sum\limits_{g = 1}^G \gamma_g \bigg(
@@ -422,9 +426,9 @@ aside from having created a dataframe containing all the relevant data,
 one needs to create a special model formula. The model formula must
 contain vertical bars <code>|</code> in order to denote the separation
 between mixture group elements and a forward slash <code>/</code> to
-denote the seperation between the mixture groups and unconstrained
+denote the separation between the mixture groups and unconstrained
 adjusting covariates. In addition, the prefix <code>i.</code> is used in
-the model formula after the forwardslash to indicate categorical
+the model formula after the forward slash to indicate categorical
 adjusting covariates. For example, consider an analysis on the outcome
 <span class="math inline">\(Y\)</span> with the following two mixture
 groups <span class="math inline">\(\{A_1, A_2\}\)</span> and <span class="math inline">\(\{B_1, B_2\}\)</span> and confounders <span class="math inline">\(\{W_1, W_2, W_3\}\)</span> where <span class="math inline">\(W_1, W_2\)</span> are numeric and <span class="math inline">\(W_3\)</span> is a three level categorical
@@ -474,34 +478,23 @@ variety of situations, so user tuning is not necessary.</p>
 <div id="statement-of-need" class="section level1">
 <h1>Statement of need</h1>
 <p>FGWQSR was motivated by several limitations of existing WQSR
-approaches. First off, many of the current methods (citations here)
+approaches. First off, many of the current methods <span class="citation">(Carrico et al. 2015; Wheeler et al. 2021a)</span>
 require data splitting; that is, they require independent data sets to
 first estimate sets of group weights and then to estimate group effect
 parameters. FGWQSR outshines many of the existing methods as group
 effects and group weights are jointly fitted using a constrained
-optimization procedure detailed in (CITE PAPER). Secondly, many of the
-existing implementations of WQSR do not easily accommodate large
-datasets. FGWQSR was created with the intention to apply WQSR to a
-dataset containing <span class="math inline">\(317,000\)</span>
-observations, which existing implementations of WQSR could not handle.
-Finally, FGWQSR further develops the WQSR statistical model by producing
-statistical tests for both group effects and single constituent effects,
-where WQSR predecessors only focused on statistical inference of group
-weights. Thus, FGWQSR is a state of the art method for performing WQSR
-type analyses that does not require data splitting, can handle large
+optimization procedure detailed in (CITE PAPER) that does not require
+any data splitting. Secondly, many of the existing implementations of
+WQSR do not easily accommodate large datasets. FGWQSR was created with
+the intention to apply WQSR to a dataset containing <span class="math inline">\(317,000\)</span> observations, which existing
+implementations of WQSR could not handle. Finally, FGWQSR further
+develops the WQSR statistical model by producing statistical tests for
+both group effects and single constituent effects, where WQSR
+predecessors only focused on statistical inference of group effects.
+Thus, FGWQSR is a state of the art method for performing WQSR type
+analyses that does not require data splitting, can handle large
 datasets, and conducts statistical tests for group and single
 constituent effects.</p>
-<p><code>Gala</code> was designed to be used by both astronomical
-researchers and by students in courses on gravitational dynamics or
-astronomy. It has already been used in a number of scientific
-publications <span class="citation">(Pearson, Price-Whelan, and Johnston
-2017)</span> and has also been used in graduate courses on Galactic
-dynamics to, e.g., provide interactive visualizations of textbook
-material <span class="citation">(Binney and Tremaine 2008)</span>. The
-combination of speed, design, and support for Astropy functionality in
-<code>Gala</code> will enable exciting scientific explorations of
-forthcoming data releases from the <em>Gaia</em> mission <span class="citation">(Gaia Collaboration 2016)</span> by students and
-experts alike.</p>
 </div>
 <div id="installation" class="section level1">
 <h1>Installation</h1>
@@ -516,8 +509,7 @@ devtools::install_github(&quot;Daniel-Rud/fgwqsr&quot;)</code></pre>
 format.</p>
 <p>If you want to cite a software repository URL (e.g. something on
 GitHub without a preferred citation) then you can do it with the example
-BibTeX entry below for <span class="citation">Smith, Thaney, and Hahnel
-(2020)</span>.</p>
+BibTeX entry below for <span class="citation">(<strong>fidgit?</strong>)</span>.</p>
 <p>For a quick reference, the following citation commands can be used: -
 <code>@author:2001</code> -&gt; “Author et al. (2001)” -
 <code>[@author:2001]</code> -&gt; “(Author et al., 2001)” -
@@ -527,23 +519,45 @@ BibTeX entry below for <span class="citation">Smith, Thaney, and Hahnel
 <div id="references" class="section level1 unnumbered">
 <h1 class="unnumbered">References</h1>
 <div id="refs" class="references csl-bib-body hanging-indent" entry-spacing="0">
-<div id="ref-Binney:2008" class="csl-entry">
-Binney, J., and S. Tremaine. 2008. <em><span>Galactic Dynamics: Second
-Edition</span></em>. Princeton University Press. <a href="http://adsabs.harvard.edu/abs/2008gady.book.....B">http://adsabs.harvard.edu/abs/2008gady.book.....B</a>.
+<div id="ref-wqsr" class="csl-entry">
+Carrico, Caroline, Chris Gennings, David C Wheeler, and Pam
+Factor-Litvak. 2015. <span>“Characterization of Weighted Quantile Sum
+Regression for Highly Correlated Data in a Risk Analysis
+Setting.”</span> <em>Journal of Agricultural, Biological, and
+Environmental Statistics</em> 20 (1): 100–120.
 </div>
-<div id="ref-gaia" class="csl-entry">
-Gaia Collaboration. 2016. <span>“<span class="nocase">The Gaia
-mission</span>.”</span> <em>Astronomy and Astrophysics</em> 595
-(November). <a href="https://doi.org/10.1051/0004-6361/201629272">https://doi.org/10.1051/0004-6361/201629272</a>.
+<div id="ref-an_overview_of_methods" class="csl-entry">
+Gibson, Elizabeth A., Yanelli Nunez, Ahlam Abuawad, Ami R. Zota, Stefano
+Renzetti, Katrina L. Devick, Chris Gennings, Jeff Goldsmith, Brent A.
+Coull, and Marianthi-Anna Kioumourtzoglou. 2019. <span>“An Overview of
+Methods to Address Distinct Research Questions on Environmental
+Mixtures: An Application to Persistent Organic Pollutants and Leukocyte
+Telomere Length.”</span> <em>Environmental Health</em> 18 (76).
 </div>
-<div id="ref-Pearson:2017" class="csl-entry">
-Pearson, S., A. M. Price-Whelan, and K. V. Johnston. 2017. <span>“<span class="nocase">Gaps in Globular Cluster Streams: Pal 5 and the Galactic
-Bar</span>.”</span> <em>ArXiv e-Prints</em>, March. <a href="http://adsabs.harvard.edu/abs/2017arXiv170304627P">http://adsabs.harvard.edu/abs/2017arXiv170304627P</a>.
+<div id="ref-Environmental_exposure_mixtures" class="csl-entry">
+Hamra, Ghassan B., and Jessie P. Buckley. 2018. <span>“Environmental
+Exposure Mixtures: Questions and Methods to Address Them.”</span>
+<em>Current Epidemiology Reports</em> 5 (2): 160–65.
 </div>
-<div id="ref-fidgit" class="csl-entry">
-Smith, A. M., K. Thaney, and M. Hahnel. 2020. <span>“Fidgit: An Ungodly
-Union of GitHub and Figshare.”</span> <em>GitHub Repository</em>.
-GitHub. <a href="https://github.com/arfon/fidgit">https://github.com/arfon/fidgit</a>.
+<div id="ref-sandy_cit" class="csl-entry">
+Joubert, Bonnie R, Marianthi-Anna Kioumourtzoglou, Toccara Chamberlain,
+Hua Y. Chen, Chris Gennings, Mary E Turyk, Marie L Miranda, et al. 2022.
+<span>“Powering Research Through Innovative Methods for Mixtures in
+Epidemiology (PRIME) Program: Novel and Expanded Statistical
+Methods.”</span> <em>International Journal of Environmental Research and
+Public Health</em> 19 (3): 1378.
+</div>
+<div id="ref-gwqsr" class="csl-entry">
+Wheeler, David C., Salem Rustom, Matthew Carli, Todd P. Whitehead, Mary
+H. Ward, and Catherine Metayer. 2021a. <span>“Assessment of Grouped
+Weighted Quantile Sum Regression for Modeling Chemical Mixtures and
+Cancer Risk.”</span> <em>International Journal of Environmental Research
+and Public Health</em> 18 (2). <a href="https://www.mdpi.com/1660-4601/18/2/504">https://www.mdpi.com/1660-4601/18/2/504</a>.
+</div>
+<div id="ref-bgwqsr" class="csl-entry">
+———. 2021b. <span>“Bayesian Group Index Regression for Modeling Chemical
+Mixtures and Cancer Risk.”</span> <em>International Journal of
+Environmental Research and Public Health</em> 18 (7). <a href="https://www.mdpi.com/1660-4601/18/7/3486">https://www.mdpi.com/1660-4601/18/7/3486</a>.
 </div>
 </div>
 </div>
