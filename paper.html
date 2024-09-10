@@ -400,12 +400,12 @@ and sets of group weights that measure the relative contribution of each
 constituent from a mixture group. The WQSR model can be mathematically
 formulated as</p>
 <p><span class="math display">\[
-\begin{align}
+\begin{aligned}
 y_i &amp;\sim \text{Bernoulli}(\pi_i) \\
 \text{logit}(\pi_i) &amp;= c_0+ \sum\limits_{g = 1}^G \gamma_g \bigg(
 \sum\limits_{k = 1} ^{c_g} w_{g,k} \cdot q_{g,k,i}\bigg) + \sum_{r =
 1}^R \phi_rz_{r,i}
-\end{align}
+\end{aligned}
 \]</span> where, for subject <span class="math inline">\(i\)</span>,
 <span class="math inline">\(y_i\)</span> represents the observed disease
 outcome, <span class="math inline">\(\pi_i\)</span> the probability of

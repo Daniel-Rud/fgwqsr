@@ -33,10 +33,10 @@ bibliography: paper.bib
 Researchers in the area of environmental epidemiology are often interested in analyzing the effects of chemical/pollutant exposures on diverse health related outcomes.  Aside from fitting single constituent models, many of the popularized epidemiological methods for handling chemical/pollutant *mixtures* are designed to accommodate the joint adjustment of multiple exposures [@wqsr; @gwqsr; @bgwqsr; @Environmental_exposure_mixtures; @an_overview_of_methods; @sandy_cit].  Models for handling mixtures are often designed with consideration to the exposure data, which often possess high levels of correlation as a result of mixture constituents deriving from common sources.  Out of the existing methods, the Weighted Quantile Sum Regression (WQSR) has been heavily popularized and utilized to examine associations between exposure mixtures and health outcomes [@wqsr, @gwqsr, @bgwqsr].  WQSR estimates group effects that measure the magnitude of effect of a mixture group and sets of group weights that measure the relative contribution of each constituent from a mixture group.  The WQSR model can be mathematically formulated as 
 
 $$
-\begin{align}
+\begin{aligned}
 y_i &\sim \text{Bernoulli}(\pi_i) \\ 
 \text{logit}(\pi_i) &= c_0+ \sum\limits_{g = 1}^G \gamma_g \bigg( \sum\limits_{k = 1} ^{c_g} w_{g,k} \cdot q_{g,k,i}\bigg) + \sum_{r = 1}^R \phi_rz_{r,i} 
-\end{align}
+\end{aligned}
 $$
 where, for subject  $i$, $y_i$  represents the observed disease outcome,  $\pi_i$ the probability of disease,   $q_{g,k,i}$ the exposure to chemical $k$ in mixture group $g$, and $z_{r,i}$ represents the the $r^{th}$ confounder adjustment for individual $i$.  The weights for mixture group $g$ satisfy $\sum_{k=1}^{c_g} w_{g,k} = 1$ and $w_{g,k} \ge 0$.  WQSR models are constrained such that all constituents from a particular mixture group have effects in the same direction, which functions as a form of regularization to stabilize the effect estimates of the highly correlated exposures.  
 
