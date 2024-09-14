@@ -474,6 +474,20 @@ maximum likelihood estimates of precisely <span class="math inline">\(0\)</span>
 parameters a boundary cone. Reasonable values of the parameter may be
 within [0.05, 0.5]; however the default value of <span class="math inline">\(0.5\)</span> has been shown to work well in a
 variety of situations, so user tuning is not necessary.</p>
+<p>In addition to an implementation of the FGWQSR model, we also include
+in this package an implementation of the Bayesian Grouped Weighted
+Quantile Sum Regression (BGWQSR) model for binary outcomes. In contrast
+to the implementation of BGWQSR in the <code>BayesGWQS</code> package,
+our implementation leverages the <code>runjags</code> Markov Chain Monte
+Carlo (MCMC) package to run separate MCMC chain processes in parallel.
+BGWQSR models can be fit in the <code>fgwqsr</code> package using the
+<code>bgwqsr</code> function, where several parameters to control the
+MCMC settings can be optionally supplied. In addition, the
+<code>plot_results</code>, <code>plot_betas</code>, and
+<code>plot_weights</code> functions can be used to view the resulting
+group effect, weight, and confounder estimates and posterior credible
+intervals. For more information on fitting models using
+<code>bgwqsr</code>, we refer the reader to the <a href="https://github.com/Daniel-Rud/fgwqsr">github page</a></p>
 </div>
 <div id="statement-of-need" class="section level1">
 <h1>Statement of need</h1>
@@ -499,7 +513,7 @@ constituent effects.</p>
 <div id="installation" class="section level1">
 <h1>Installation</h1>
 <p>The most current version of <code>fgwqsr</code> package can be
-downloaded from github using the following instructions</p>
+downloaded from github using the following instructions:</p>
 <pre class="r"><code>install.packages(&quot;devtools&quot;)
 devtools::install_github(&quot;Daniel-Rud/fgwqsr&quot;)</code></pre>
 </div>

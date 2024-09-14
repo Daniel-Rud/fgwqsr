@@ -74,6 +74,9 @@ The resulting FGWQSR model can be viewed using the summary function `summary(fgw
 An optional tuning parameter is the `zero_threshold_cutoff`, which is used in the nonregular statistical testing procedure.  The `zero_threshold_cutoff` parameter defines how often parameters estimated close to the boundary of the parameter space are assigned a boundary cone in the constrained multivariate normal monte carlo inference procedure.   A `zero_tolerance_threshold` value of $0.5$ will assign parameters with FGWQSR maximum likelihood estimates of precisely $0$ the boundary cone while a `zero_tolerance_threshold` value of 0 will assign all
 parameters a boundary cone.  Reasonable values of the parameter may be within [0.05, 0.5]; however the default value of $0.5$ has been shown to work well in a variety of situations, so user tuning is not necessary.  
 
+In addition to an implementation of the FGWQSR model, we also include in this package an implementation of the Bayesian Grouped Weighted Quantile Sum Regression (BGWQSR) model for binary outcomes. In contrast to the implementation of BGWQSR in the `BayesGWQS` package, our implementation leverages the `runjags` Markov Chain Monte Carlo (MCMC) package to run separate MCMC chain processes in parallel.  BGWQSR models can be fit in the `fgwqsr` package using the `bgwqsr` function, where several parameters to control the MCMC settings can be optionally supplied.  In addition, the `plot_results`, `plot_betas`, and `plot_weights` functions can be used to view the resulting group effect, weight, and confounder estimates and posterior credible intervals.  For more information on fitting models using `bgwqsr`, we refer the reader to the [github page](https://github.com/Daniel-Rud/fgwqsr)
+
+
 # Statement of need
 
 FGWQSR was motivated by several limitations of existing WQSR approaches.  First off, many of the current methods [@wqsr; @gwqsr] require data splitting; that is, they require independent data sets to first estimate sets of group weights and then to estimate group effect parameters. FGWQSR outshines many of the existing methods as group effects and group weights are jointly fitted using a constrained optimization procedure detailed in (CITE PAPER) that does not require any data splitting.  Secondly, many of the existing implementations of WQSR do not easily accommodate large datasets.  FGWQSR was created with the intention to apply WQSR to a dataset containing $317,000$ observations, which existing implementations of WQSR could not handle.  Finally, FGWQSR further develops the WQSR statistical model by producing statistical tests for both group effects and single constituent effects, where WQSR predecessors only focused on statistical inference of group effects.  Thus, FGWQSR is a state of the art method for performing WQSR type analyses that does not require data splitting, can handle large datasets, and conducts statistical tests for group and single constituent effects.  
@@ -83,7 +86,7 @@ FGWQSR was motivated by several limitations of existing WQSR approaches.  First 
 
 # Installation 
 
-The most current version of `fgwqsr` package can be downloaded from github using the following instructions 
+The most current version of `fgwqsr` package can be downloaded from github using the following instructions: 
 ```r
 install.packages("devtools")
 devtools::install_github("Daniel-Rud/fgwqsr")
