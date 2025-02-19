@@ -1271,6 +1271,18 @@ fgwqsr = function(formula, data, quantiles = 5,
          If using a string formula, consider using as.formula(formula).")
   }
 
+  # check for a tibble instead of data frame
+  if(class(data)[1] != "data.frame")
+  {
+    stop("The `data` argument must be a dataframe! Ensure that your data
+         is not a matrix or a tibble, or try casting the dataset using
+         the as.data.frame() function.")
+  }
+  {
+    stop("The formula argument must be of type formula.
+         If using a string formula, consider using as.formula(formula).")
+  }
+
   # get formula and vars object that stores info about model
   f = as.character(formula); vars = clean_vars(gsub("\n", "", f[3]))
 

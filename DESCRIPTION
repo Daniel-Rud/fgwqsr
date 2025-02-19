@@ -27,11 +27,11 @@ Imports:
     progressr (>= 0.13.0),
     runjags (>= 2.2.2.1),
     sigmoid (>= 1.4.0),
-    statar (>= 0.7.5)
+    statar (>= 0.7.5),
+    progress (>= 1.2.2)
 Suggests: 
     coda (>= 0.19.4),
     knitr (>= 1.43),
-    progress (>= 1.2.2),
     rmarkdown (>= 2.23),
     testthat (>= 3.0.0)
 VignetteBuilder: 
