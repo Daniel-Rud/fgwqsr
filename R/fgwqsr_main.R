@@ -506,80 +506,80 @@ get_optimization_region = function(logistic_param, vars)
               optimization_upper = optimization_upper))
 }
 
-fgwqsr_logistic_ll = function(B,design_matrix, y_vec, vars) # log likelihood
+fgwqsr_logistic_ll = function(B,design_matrix, y_vec, vars, offset) # log likelihood
 {
   B_logistic = make_beta_vec(B,vars) # to evaluate special Beta vector
 
-  ll = logistic_neg_ll(B_logistic,design_matrix, y_vec)
+  ll = logistic_neg_ll(B_logistic,design_matrix, y_vec, offset)
   # will return negative of log likelihood -- what we need for optim
 
   return(ll)
 }
 
-fgwqsr_poisson_ll = function(B,design_matrix, y_vec, vars) # log likelihood
+fgwqsr_poisson_ll = function(B,design_matrix, y_vec, vars, offset) # log likelihood
 {
   new_B = make_beta_vec(B,vars) # to evaluate special Beta vector
 
-  ll = poisson_neg_ll_WO_factorial(new_B,design_matrix, y_vec)
+  ll = poisson_neg_ll_WO_factorial(new_B,design_matrix, y_vec, offset)
   # will return negative of log likelihood -- what we need for optim
   return(ll)
 }
 
-fgwqsr_ols_loss = function(B,design_matrix, y_vec, vars) # log likelihood
+fgwqsr_ols_loss = function(B,design_matrix, y_vec, vars, offset) # log likelihood
 {
   new_B = make_beta_vec(B,vars) # to evaluate special Beta vector
 
-  loss = ols_loss(new_B,design_matrix, y_vec)
+  loss = ols_loss(new_B,design_matrix, y_vec, offset)
 
   return(loss)
 }
 
-logistic_neg_ll = function(B,design_matrix, y_vec) # log likelihood
+logistic_neg_ll = function(B,design_matrix, y_vec, offset) # log likelihood
 {
-  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1))
+  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1)) + offset
 
   ll =ifelse(y_vec == 1, -lin_pred, lin_pred) %>% sigmoid::softplus() %>% sum
 
   return(ll)
 }
 
-poisson_neg_ll_WO_factorial = function(B,design_matrix, y_vec) # log likelihood
+poisson_neg_ll_WO_factorial = function(B,design_matrix, y_vec, offset) # log likelihood
 {
-  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1))
+  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1)) + offset
 
   ll = sum(exp(lin_pred) - y_vec * lin_pred)
 
   return(ll)
 }
 
-poisson_neg_ll = function(B,design_matrix, y_vec) # log likelihood
+poisson_neg_ll = function(B,design_matrix, y_vec, offset) # log likelihood
 {
-  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1))
+  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1)) + offset
 
   ll = sum(exp(lin_pred) - y_vec * lin_pred + lfactorial(y_vec))
 
   return(ll)
 }
 
-ols_loss = function(B,design_matrix, y_vec) # log likelihood
+ols_loss = function(B,design_matrix, y_vec, offset) # log likelihood
 {
-  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1))
+  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1)) + offset
   loss = as.numeric(crossprod(y_vec - lin_pred, y_vec - lin_pred))
   return(loss)
 }
 
-ols_gr = function(B,design_matrix, y_vec) # log likelihood
+ols_gr = function(B,design_matrix, y_vec, offset) # log likelihood
 {
-  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1))
+  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1)) + offset
   gr =as.numeric(-2*crossprod(y_vec - lin_pred, design_matrix))
   return(gr)
 }
 
-mvn_neg_ll = function(B,design_matrix, y_vec, sigma_2) # log likelihood
+mvn_neg_ll = function(B,design_matrix, y_vec, sigma_2, offset) # log likelihood
 {
   n = nrow(design_matrix)
 
-  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1))
+  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1)) + offset
 
   ll = -(n/2)*log(2 * pi) - (n/2)*log(sigma_2) -
     (1/(2*sigma_2)) * crossprod(y_vec -lin_pred, y_vec -lin_pred)
@@ -587,15 +587,18 @@ mvn_neg_ll = function(B,design_matrix, y_vec, sigma_2) # log likelihood
   return(-1*ll)
 }
 
-logistic_neg_gr = function(B,design_matrix, y_vec)
+logistic_neg_gr = function(B,design_matrix, y_vec, offset)
 {
-  gr = colSums(design_matrix * (c(y_vec - pracma::sigmoid(crossprod(t(design_matrix),B)))))
+  lin_pred = crossprod(t(design_matrix),B) + offset
+
+  gr = colSums(design_matrix * (c(y_vec - pracma::sigmoid(lin_pred))))
+
   return(-1*gr)
 }
 
-poisson_neg_gr = function(B,design_matrix, y_vec)
+poisson_neg_gr = function(B,design_matrix, y_vec, offset)
 {
-  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1))
+  lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1)) + offset
 
   gr = as.vector(crossprod(design_matrix, matrix(y_vec, ncol = 1)) - crossprod(design_matrix, exp(lin_pred)))
 
@@ -690,7 +693,7 @@ gaussian_hessian = function(B,design_matrix, sigma_2)
 # models when excluding a pollutant with weight 0 was nonzero.
 
 # this happens on few occasions, we can manually make the LRT
-fit_fgwqsr_hybrid = function(formula, data, quantiles,family, output_hessian = F,
+fit_fgwqsr_hybrid = function(formula, data, quantiles, family, offset, output_hessian = F,
                       initial_vals, return_y = F, return_data = F,
                       optim_control_list)
 {
@@ -750,6 +753,7 @@ fit_fgwqsr_hybrid = function(formula, data, quantiles,family, output_hessian = F
                  design_matrix = design_matrix,
                  y_vec = y_vec,
                  vars = vars,
+                 offset = offset,
                  method = "BFGS",
                  control = list(maxit = 1000,
                                 factr = 1E-14,
@@ -800,10 +804,12 @@ fit_fgwqsr_hybrid = function(formula, data, quantiles,family, output_hessian = F
                                           gr = gr,
                                           design_matrix = design_matrix,
                                           y_vec = y_vec,
+                                          offset = offset,
                                           method = "L-BFGS-B",
                                           lower = optimization_region$optimization_lower,
                                           upper = optimization_region$optimization_upper,
-                                          control = optim_control_list)
+                                          control = optim_control_list
+                                          )
                            },
                          error = function(err)
                          {
@@ -825,14 +831,14 @@ fit_fgwqsr_hybrid = function(formula, data, quantiles,family, output_hessian = F
   # if gaussian, compute sigma^2 and calculate log likelihood
   if(family == "gaussian")
   {
-    sigma_2 = sum((y_vec - tcrossprod(design_matrix,matrix(final_fit$par, nrow = 1)))^2) /
+    sigma_2 = sum((y_vec - (tcrossprod(design_matrix,matrix(final_fit$par, nrow = 1)) + offset))^2) /
       (nrow(design_matrix) - ncol(design_matrix))
 
     # change loss value to log likelihood value
-    final_fit$value = mvn_neg_ll(final_fit$par, design_matrix, y_vec, sigma_2)
+    final_fit$value = mvn_neg_ll(final_fit$par, design_matrix, y_vec, sigma_2, offset)
   }else if(family == "poisson") # evaluate ll with factorial term
   {
-    final_fit$value = poisson_neg_ll(final_fit$par, design_matrix, y_vec)
+    final_fit$value = poisson_neg_ll(final_fit$par, design_matrix, y_vec, offset)
   }
 
   return_list = list(ML_sol= final_fit, vars = vars)
@@ -851,9 +857,10 @@ fit_fgwqsr_hybrid = function(formula, data, quantiles,family, output_hessian = F
 }
 
 # MO stands for multiple optim
-fit_fgwqsr_MO = function(formula, data, quantiles,family, output_hessian = F,
-                      initial_cov_vals, return_y = F, return_data = F,
-                      optim_control_list, cores)
+fit_fgwqsr_MO = function(formula, data, quantiles,
+                         family, offset, output_hessian = F,
+                         initial_cov_vals, return_y = F, return_data = F,
+                         optim_control_list, cores)
 {
   f = as.character(formula)
 
@@ -937,6 +944,7 @@ fit_fgwqsr_MO = function(formula, data, quantiles,family, output_hessian = F,
                                                                          gr = gr,
                                                                          design_matrix = design_matrix,
                                                                          y_vec = y_vec,
+                                                                         offset = offset,
                                                                          method = "L-BFGS-B",
                                                                          lower = optimization_regions[[i]]$lower,
                                                                          upper = optimization_regions[[i]]$upper,
@@ -968,21 +976,21 @@ fit_fgwqsr_MO = function(formula, data, quantiles,family, output_hessian = F,
   # if gaussian, compute sigma^2 and calculate log likelihood
   if(family == "gaussian")
   {
-    sigma_2 = sum((y_vec - tcrossprod(design_matrix,matrix(final_fit$par, nrow = 1)))^2) /
+    sigma_2 = sum((y_vec - (tcrossprod(design_matrix,matrix(final_fit$par, nrow = 1)) + offset))^2) /
       (nrow(design_matrix) - ncol(design_matrix))
 
     # change loss value to log likelihood value
-    final_fit$value = mvn_neg_ll(final_fit$par, design_matrix, y_vec, sigma_2)
+    final_fit$value = mvn_neg_ll(final_fit$par, design_matrix, y_vec, sigma_2, offset)
   }else if(family == "poisson") # evaluate ll with factorial term
   {
-    final_fit$value = poisson_neg_ll(final_fit$par, design_matrix, y_vec)
+    final_fit$value = poisson_neg_ll(final_fit$par, design_matrix, y_vec, offset)
   }
 
   return_list = list(ML_sol= final_fit, vars = vars)
 
   if(family == "gaussian")
   {
-    return_list$residual_var = sum((y_vec - tcrossprod(design_matrix,matrix(final_fit$par, nrow = 1)))^2) /
+    return_list$residual_var = sum((y_vec - (tcrossprod(design_matrix,matrix(final_fit$par, nrow = 1)) + offset))^2) /
       (nrow(design_matrix) - ncol(design_matrix))
   }
 
@@ -1046,7 +1054,7 @@ generate_optimization_regions = function(vars, num_confounders)
   return(opt_list)
 }
 
-get_cov_initial_vals = function(formula, data, quantiles, family)
+get_cov_initial_vals = function(formula, data, quantiles, family, offset)
 {
   # get initial values for intercept and confounder estimates using quantile
   # logistic regression
@@ -1075,7 +1083,7 @@ get_cov_initial_vals = function(formula, data, quantiles, family)
 
   glm_formula = paste(y, "~ .") %>% stats::formula()
 
-  unconstr_glm = stats::glm(formula =glm_formula, data = data, family = family)
+  unconstr_glm = stats::glm(formula =glm_formula, data = data, family = family, offset = offset)
 
   glm_coefs = stats::coef(unconstr_glm)
 
@@ -1091,10 +1099,9 @@ get_cov_initial_vals = function(formula, data, quantiles, family)
   initial_ests = list(intercept_est = intercept_est,
                       confounder_ests = confounder_ests)
   return(initial_ests)
-
 }
 
-fgwqsr_caller = function(formulas, data, quantiles, family, vars, verbose, cores, optim_control_list)
+fgwqsr_caller = function(formulas, data, quantiles, family, vars, verbose, cores, optim_control_list, offset)
 {
   if(verbose == TRUE) # call to progress
   {
@@ -1105,7 +1112,8 @@ fgwqsr_caller = function(formulas, data, quantiles, family, vars, verbose, cores
   initial_cov_vals = get_cov_initial_vals(formula = stats::formula(formulas[[1]]),
                                           data = data,
                                           quantiles = quantiles,
-                                          family = family)
+                                          family = family,
+                                          offset = offset)
   # initialize for storing results
   fits = vector(mode = "list", length = length(formulas))
 
@@ -1115,6 +1123,7 @@ fgwqsr_caller = function(formulas, data, quantiles, family, vars, verbose, cores
                             data = data,
                             quantiles = quantiles,
                             family = family,
+                            offset = offset,
                             return_y = T,
                             return_data = T, initial_cov_vals = initial_cov_vals,
                             optim_control_list = optim_control_list,
@@ -1152,7 +1161,7 @@ fgwqsr_caller = function(formulas, data, quantiles, family, vars, verbose, cores
     {
       if(is.null(vars$continuous) && is.null(vars$categorical))
       {
-        result = stats::logLik(stats::glm(stats::formula(paste(formulas[x], "1")), data = data, family = family))[1]
+        result = stats::logLik(stats::glm(stats::formula(paste(formulas[x], "1")), data = data, family = family, offset = offset))[1]
       }else # if no mixture elements but confounders
       {
         f = as.character(stats::as.formula((formulas[x])))
@@ -1168,7 +1177,7 @@ fgwqsr_caller = function(formulas, data, quantiles, family, vars, verbose, cores
                                          remove_selected_columns = TRUE) # add dummy variables
         }
 
-        result = stats::logLik(stats::glm(stats::formula(paste(y,"~ .")), data = data_copy, family = family))[1]
+        result = stats::logLik(stats::glm(stats::formula(paste(y,"~ .")), data = data_copy, family = family, offset = offset))[1]
       }
     }else # if either single pollutant LRT or 1 group LRT (more than 1 mixture group)
     {
@@ -1177,8 +1186,9 @@ fgwqsr_caller = function(formulas, data, quantiles, family, vars, verbose, cores
         result = -1*fits[[1]]$ML_sol$value
       }else
       {
-        result = -1*fit_fgwqsr_hybrid(stats::formula(formulas[x]), data, quantiles,
+        result = -1*fit_fgwqsr_hybrid(formula = stats::formula(formulas[x]), data, quantiles,
                                       family = family,
+                                      offset = offset,
                                       initial_vals = initial_vals[[x-1]],
                                       optim_control_list = optim_control_list)$ML_sol$value
       }
@@ -1217,6 +1227,7 @@ fgwqsr_caller = function(formulas, data, quantiles, family, vars, verbose, cores
 #' parameters a boundary cone.  Reasonable values may be within [0.05, 0.5] --
 #' all choices of \code{zero_tolerance_threshold} are asymptotically equivalent.
 #' The default is set to zero_tolerance_threshold = 0.5.
+#' @param offset Offset variable with constrained coefficient 1, typically used in poisson regression to model rates
 #' @param verbose Displays messages and progress bar while fitting FGWQSR model.
 #'  Default is TRUE.
 #' @param cores Number of cores to parallelize on for fitting nested models and
@@ -1250,7 +1261,9 @@ fgwqsr_caller = function(formulas, data, quantiles, family, vars, verbose, cores
 fgwqsr = function(formula, data, quantiles = 5,
                   family = "binomial",
                   n_mvn_sims = 10000,
-                  zero_threshold_cutoff = .5, verbose = T,
+                  zero_threshold_cutoff = .5,
+                  offset = NULL,
+                  verbose = T,
                   cores = future::availableCores(),
                   optim_control_list = list(maxit = 1000, factr = 1E-12, fnscale = 1))
 {
@@ -1277,10 +1290,6 @@ fgwqsr = function(formula, data, quantiles = 5,
     stop("The `data` argument must be a dataframe! Ensure that your data
          is not a matrix or a tibble, or try casting the dataset using
          the as.data.frame() function.")
-  }
-  {
-    stop("The formula argument must be of type formula.
-         If using a string formula, consider using as.formula(formula).")
   }
 
   # get formula and vars object that stores info about model
@@ -1448,6 +1457,17 @@ fgwqsr = function(formula, data, quantiles = 5,
     }
   }
 
+  if(is.null(offset))
+  {
+    offset = rep(0, nrow(data))
+  }else
+  {
+    if (length(offset) != nrow(data))
+    {
+      stop("Offset length and number of rows in dataset do not match!")
+    }
+  }
+
   ###########################################################################
 
   # get list of formulas to run submodels for LRT
@@ -1459,11 +1479,11 @@ fgwqsr = function(formula, data, quantiles = 5,
     progressr::handlers("progress")
     message("Fitting full and nested FGWQSR models...")
     progressr::with_progress(fits <- fgwqsr_caller(formulas, data, quantiles,family,vars, verbose,
-                                        cores, optim_control_list))
+                                        cores, optim_control_list, offset))
     message("\nGenerating LRT distributions under H0...")
   }else
   {
-    fits <- fgwqsr_caller(formulas, data, quantiles,family, vars, verbose, cores, optim_control_list)
+    fits <- fgwqsr_caller(formulas, data, quantiles,family, vars, verbose, cores, optim_control_list, offset)
   }
 
   # full model
