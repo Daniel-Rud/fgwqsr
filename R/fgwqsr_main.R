@@ -1227,7 +1227,8 @@ fgwqsr_caller = function(formulas, data, quantiles, family, vars, verbose, cores
 #' parameters a boundary cone.  Reasonable values may be within [0.05, 0.5] --
 #' all choices of \code{zero_tolerance_threshold} are asymptotically equivalent.
 #' The default is set to zero_tolerance_threshold = 0.5.
-#' @param offset Offset variable with constrained coefficient 1, typically used in poisson regression to model rates
+#' @param offset Vector of offsets that will have constrained coefficient 1, typically used in poisson regression to model rates.
+#' Offset should NOT reference a columname in the dataframe.
 #' @param verbose Displays messages and progress bar while fitting FGWQSR model.
 #'  Default is TRUE.
 #' @param cores Number of cores to parallelize on for fitting nested models and
