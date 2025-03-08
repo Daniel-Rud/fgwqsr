@@ -11,6 +11,7 @@ fgwqsr(
   family = "binomial",
   n_mvn_sims = 10000,
   zero_threshold_cutoff = 0.5,
+  offset = NULL,
   verbose = T,
   cores = future::availableCores(),
   optim_control_list = list(maxit = 1000, factr = 1e-12, fnscale = 1)
@@ -40,6 +41,9 @@ boundary cone while a \code{zero_tolerance_threshold} value of 0 will assign all
 parameters a boundary cone.  Reasonable values may be within [0.05, 0.5] --
 all choices of \code{zero_tolerance_threshold} are asymptotically equivalent.
 The default is set to zero_tolerance_threshold = 0.5.}
+
+\item{offset}{Vector of offsets that will have constrained coefficient 1, typically used in poisson regression to model rates.
+Offset should NOT reference a columname in the dataframe.}
 
 \item{verbose}{Displays messages and progress bar while fitting FGWQSR model.
 Default is TRUE.}
