@@ -19,7 +19,7 @@ authors:
 affiliations:
  - name: Department of Population and Public Health Sciences, University of Southern California, USA
    index: 1
-date: 3 September 2024
+date: 23 March 2025
 bibliography: paper.bib
 
 # Optional fields if submitting to a AAS journal too, see this blog post:
