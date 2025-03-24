@@ -4,17 +4,18 @@
 # fgwqsr – Frequentist Grouped Weighted Quantile Sum Regression
 
 Fully frequentist model fitting procedure for the weighted quantile sum
-regression formulation. Included in this package is an implementation of
-Bayesian Grouped Weighted Quantile Sum Regression (bgwqsr) introduced by
-Wheeler, David C et al. that fits Markov Chain Monte Carlo (MCMC) chains
-in parallel through the runjags package.
+regression formulation. Included in this package is an implementation of 
+both the Frequentist Grouped Weighted Quantile Sum Regression (FGWQSR) 
+and the Bayesian Grouped Weighted Quantile Sum Regression (bgwqsr) 
+introduced by Wheeler, David C et al. that fits Markov Chain Monte Carlo 
+(MCMC) chainsin parallel through the runjags package.
 
 <!-- badges: start -->
 <!-- badges: end -->
 
 # Overview
 
-<br> FGWQSR estimates parameters to the following model:
+<br> For a binary outcome (FGWQSR also accomodates continuous and count outcomes), FGWQSR estimates parameters to the following model:
 
 <br>
 
