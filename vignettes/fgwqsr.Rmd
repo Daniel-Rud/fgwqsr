@@ -19,7 +19,7 @@ knitr::opts_chunk$set(
 
 # Introduction 
 <br>
-In this vignette, we will showcase how to fit FGWQSR models on cross sectional data with a binary outcome.  FGWQSR estimates parameters to the following model: 
+In this vignette, we will showcase how to fit FGWQSR models with a binary outcome.  Although we focus on the binary outcome case, FGWQSR also accomodates continuous and count outcome types.  FGWQSR estimates parameters to the following model: 
 
 \begin{align}
 y_i &\sim \text{Bernoulli}(\pi_i) \\ 
@@ -235,6 +235,7 @@ Notice that we did not use the "$/$" character since we did not include adjustin
 fgwqsr_fit = fgwqsr(formula = mod_formula, 
                     data = data, 
                     quantiles = 5, 
+                    family = "binomial",
                     n_mvn_sims = 100, 
                     verbose = T)
 
@@ -319,7 +320,8 @@ mod_formula_adj = y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X
 fgwqsr_fit_adj = fgwqsr(formula = mod_formula_adj, 
                     data = data, 
                     quantiles = 5, 
-                    n_mvn_sims = 100, 
+                    family = "binomial",
+                    n_mvn_sims = 10000, 
                     verbose = T)
 
 ```
@@ -373,8 +375,8 @@ We also provide in this package functions to run BGWQSR models using the runjags
 bgwqsr_fit = bgwqsr(formula = mod_formula_adj, 
                     data = data, 
                     quantiles = 5, 
-                    n.iter = 1000,
-                    n.burnin = 40, 
+                    n.iter = 10000,
+                    n.burnin = 2000, 
                     n.thin = 1, n.chains = 3, 
                     n.adapt = 10, 
                     method = "parallel")
@@ -391,20 +393,20 @@ bgwqsr_fit$model$summaries
 We can analyze the mixing of the markov chains and corresponding autocorrelation plots using functions from the coda package.  
 
 ```{r, figure.width = 10, figure.height = 10}
-#coda::traceplot(bgwqsr_fit$model$mcmc) # traceplot
+coda::traceplot(bgwqsr_fit$model$mcmc) # traceplot
 ```
 
 ```{r, figure.width = 10, figure.height = 10}
-#coda::autocorr.plot(bgwqsr_fit$model$mcmc, auto.layout = F, ask = F) # autocorrelation plot 
+coda::autocorr.plot(bgwqsr_fit$model$mcmc, auto.layout = F, ask = F) # autocorrelation plot 
 ```
 
 
 ```{r, figure.width = 10, figure.height = 10}
-#coda::densplot(bgwqsr_fit$model$mcmc) # posterior density plots
+coda::densplot(bgwqsr_fit$model$mcmc) # posterior density plots
 ```
 
 ```{r, figure.width = 10, figure.height = 10}
-#plot(bgwqsr_fit$model$mcmc, auto.layout = F) # combines traceplot() and densplot()
+plot(bgwqsr_fit$model$mcmc, auto.layout = F) # combines traceplot() and densplot()
 ```
 
 

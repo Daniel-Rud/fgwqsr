@@ -19,6 +19,7 @@ in parallel through the runjags package.
 <br>
 
 $$y_i \sim \text{Bernoulli}(\pi_i) $$
+
 $$\text{logit}(\pi_i) = c_0+ \sum\limits_{g = 1}^G \gamma_g \bigg( \sum\limits_{k = 1} ^{c_g} w_{g,k} \cdot q_{g,k,i}\bigg) + \sum_{r = 1}^R \phi_rz_{r,i} $$
 where
 
@@ -57,26 +58,19 @@ You can install the development version of fgwqsr from
 ``` r
 # install.packages("devtools")
 devtools::install_github("Daniel-Rud/fgwqsr")
+#> Using github PAT from envvar GITHUB_PAT. Use `gitcreds::gitcreds_set()` and unset GITHUB_PAT in .Renviron (or elsewhere) if you want to use the more secure git credential store instead.
 #> Downloading GitHub repo Daniel-Rud/fgwqsr@HEAD
-#> fansi   (1.0.4 -> 1.0.5) [CRAN]
-#> withr   (2.5.0 -> 2.5.1) [CRAN]
-#> ggplot2 (3.4.3 -> 3.4.4) [CRAN]
-#> Installing 3 packages: fansi, withr, ggplot2
-#> Installing packages into '/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpVPL745/temp_libpath874955fed213'
-#> (as 'lib' is unspecified)
 #> 
-#> The downloaded binary packages are in
-#>  /var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T//RtmpP4mS6a/downloaded_packages
 #> ── R CMD build ─────────────────────────────────────────────────────────────────
-#> * checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpP4mS6a/remotes8ac9332aeec7/Daniel-Rud-fgwqsr-63eb157/DESCRIPTION’ ... OK
-#> * preparing ‘fgwqsr’:
-#> * checking DESCRIPTION meta-information ... OK
-#> * checking for LF line-endings in source and make files and shell scripts
-#> * checking for empty or unneeded directories
-#> Omitted ‘LazyData’ from DESCRIPTION
-#> * building ‘fgwqsr_0.1.0.tar.gz’
-#> Installing package into '/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpVPL745/temp_libpath874955fed213'
-#> (as 'lib' is unspecified)
+#>      checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmprpMIRn/remotes16d8746461745/Daniel-Rud-fgwqsr-8f82fee/DESCRIPTION’ ...  ✔  checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmprpMIRn/remotes16d8746461745/Daniel-Rud-fgwqsr-8f82fee/DESCRIPTION’
+#>   ─  preparing ‘fgwqsr’:
+#>      checking DESCRIPTION meta-information ...  ✔  checking DESCRIPTION meta-information
+#>   ─  checking for LF line-endings in source and make files and shell scripts
+#>   ─  checking for empty or unneeded directories
+#>      Omitted ‘LazyData’ from DESCRIPTION
+#>   ─  building ‘fgwqsr_0.1.0.tar.gz’
+#>      
+#> 
 ```
 
 ``` r
@@ -388,7 +382,7 @@ summary(fgwqsr_fit)
 #> 
 #> Significance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' 
 #> 
-#> Total runtime for FGWQSR:  58.87 seconds on 10 cores.
+#> Total runtime for FGWQSR:  1.27 minutes on 10 cores.
 ```
 
 <br> We can compare the true underlying group indices and chemical
@@ -560,7 +554,7 @@ summary(fgwqsr_fit_adj)
 #> 
 #> Significance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' 
 #> 
-#> Total runtime for FGWQSR:  1.06 minutes on 10 cores.
+#> Total runtime for FGWQSR:  1.35 minutes on 10 cores.
 ```
 
 <br>
@@ -667,10 +661,15 @@ bgwqsr_fit = bgwqsr(formula = mod_formula_adj,
                     n.thin = 1, 
                     n.chains = 3,
                     method = "parallel")
+#> Warning in system(paste0("lipo -archs ", gsub("/bin/jags",
+#> "/libexec/jags-terminal", : running command 'lipo -archs
+#> /usr/local/libexec/jags-terminal' had status 1
+#> Warning in runjags::testjags(silent = T): Reading the binary type of JAGS
+#> failed - do you need to update the Xcode Command Line Tools?
 #> Calling 3 simulations using the parallel method...
 #> Following the progress of chain 1 (the program will wait for all chains
 #> to finish before continuing):
-#> Welcome to JAGS 4.3.2 (official binary) on Thu Oct 12 11:04:33 2023
+#> Welcome to JAGS 4.3.2 (official binary) on Mon Mar 24 13:17:29 2025
 #> JAGS is free software and comes with ABSOLUTELY NO WARRANTY
 #> Loading module: basemod: ok
 #> Loading module: bugs: ok
@@ -714,72 +713,50 @@ the summaries object from the bgwqsr model.
 
 ``` r
 bgwqsr_fit$model$summaries
-#>                      Lower95        Median     Upper95          Mean
-#> B0              -4.30210e+00 -3.0952300000 -1.74144000 -3.0856619104
-#> B1              -7.59809e-01 -0.7157205000 -0.67133600 -0.7158515534
-#> B2              -2.00535e-02  0.0167345000  0.05589660  0.0173380522
-#> B3               3.49518e-01  0.3897380000  0.43453700  0.3898611889
-#> phi_weight       2.92115e-02  0.0481714000  0.06657180  0.0479928583
-#> phi_city_city_2  1.87781e-02  0.1623200000  0.27459900  0.1591256876
-#> phi_city_city_3 -1.16474e+00 -1.0462600000 -0.92083200 -1.0465634217
-#> w1[1]            3.06008e-01  0.3514210000  0.40051200  0.3508524864
-#> w1[2]            2.86619e-01  0.3332080000  0.37982100  0.3335506664
-#> w1[3]            2.62765e-01  0.3087470000  0.35918600  0.3084931350
-#> w1[4]            3.32467e-05  0.0026340700  0.02772390  0.0062034784
-#> w1[5]            1.99593e-08  0.0000143415  0.00461558  0.0009002353
-#> w2[1]            1.24377e-12  0.1105480000  0.90222300  0.2516783792
-#> w2[2]            1.84539e-13  0.0637446000  0.88154300  0.2105397284
-#> w2[3]            2.17595e-10  0.0453788000  0.82438500  0.1826313914
-#> w2[4]            2.04711e-13  0.2622310000  0.95116400  0.3551505062
-#> w3[1]            2.72975e-01  0.3666375000  0.46383100  0.3678420780
-#> w3[2]            1.82364e-01  0.2864790000  0.37861600  0.2869475990
-#> w3[3]            2.13726e-01  0.3066120000  0.41303500  0.3066545975
-#> w3[4]            1.88523e-11  0.0048332300  0.11838400  0.0285844623
-#> w3[5]            6.35964e-07  0.0037674850  0.04185370  0.0099712572
-#>                          SD Mode        MCerr MC%ofSD SSeff       AC.10
-#> B0              0.658038476   NA 0.0083327334     1.3  6236 -0.01221009
-#> B1              0.022663776   NA 0.0002754119     1.2  6772  0.01690245
-#> B2              0.019684200   NA 0.0004109830     2.1  2294  0.09320557
-#> B3              0.021995462   NA 0.0003032653     1.4  5260  0.03511188
-#> phi_weight      0.009593334   NA 0.0001213097     1.3  6254 -0.01314479
-#> phi_city_city_2 0.064296842   NA 0.0013673318     2.1  2211  0.10632959
-#> phi_city_city_3 0.062332230   NA 0.0009100506     1.5  4691  0.03971950
-#> w1[1]           0.024212923   NA 0.0005713570     2.4  1796  0.11062723
-#> w1[2]           0.024269874   NA 0.0005689398     2.3  1820  0.10649906
-#> w1[3]           0.024620076   NA 0.0005910591     2.4  1735  0.11567715
-#> w1[4]           0.009143104   NA 0.0012051479    13.2    58  0.91769452
-#> w1[5]           0.003098471   NA 0.0004535183    14.6    47  0.94463769
-#> w2[1]           0.297694515   NA 0.0141013347     4.7   446  0.52870752
-#> w2[2]           0.282939745   NA 0.0135901586     4.8   433  0.54368622
-#> w2[3]           0.263129636   NA 0.0122163115     4.6   464  0.52316049
-#> w2[4]           0.338345513   NA 0.0165843037     4.9   416  0.57976731
-#> w3[1]           0.049261003   NA 0.0012319850     2.5  1599  0.13630152
-#> w3[2]           0.049886219   NA 0.0013507356     2.7  1364  0.19075789
-#> w3[3]           0.051385304   NA 0.0013334044     2.6  1485  0.16205836
-#> w3[4]           0.040401168   NA 0.0042701411    10.6    90  0.79972540
-#> w3[5]           0.014896495   NA 0.0013875691     9.3   115  0.82371076
-#>                     psrf
-#> B0              1.000512
-#> B1              1.000279
-#> B2              1.000258
-#> B3              1.010646
-#> phi_weight      1.000488
-#> phi_city_city_2 1.000175
-#> phi_city_city_3 1.000488
-#> w1[1]           1.006384
-#> w1[2]           1.003031
-#> w1[3]           1.001659
-#> w1[4]           1.472117
-#> w1[5]           1.435964
-#> w2[1]           1.082539
-#> w2[2]           1.060421
-#> w2[3]           1.005073
-#> w2[4]           1.051189
-#> w3[1]           1.014283
-#> w3[2]           1.019686
-#> w3[3]           1.019458
-#> w3[4]           5.618897
-#> w3[5]           1.313100
+#>                      Lower95       Median    Upper95         Mean          SD
+#> B0              -4.40849e+00 -3.095795000 -1.7895200 -3.088385284 0.665667178
+#> B1              -7.61353e-01 -0.717048000 -0.6721500 -0.717157004 0.022812537
+#> B2              -1.92075e-02  0.017072400  0.0559564  0.017634530 0.019430139
+#> B3               3.49999e-01  0.391982000  0.4362610  0.392150625 0.022072387
+#> phi_weight       2.79012e-02  0.048054400  0.0661864  0.047983756 0.009708461
+#> phi_city_city_2  1.71834e-02  0.163311500  0.2761830  0.159490287 0.065037109
+#> phi_city_city_3 -1.16980e+00 -1.046220000 -0.9270710 -1.046969735 0.062277599
+#> w1[1]            3.03934e-01  0.348945000  0.3959290  0.349093571 0.023758275
+#> w1[2]            2.88053e-01  0.332456500  0.3823490  0.333110185 0.023969905
+#> w1[3]            2.58450e-01  0.308096000  0.3500950  0.307047822 0.023671648
+#> w1[4]            3.58028e-05  0.004023960  0.0262583  0.007439622 0.009045895
+#> w1[5]            8.22267e-07  0.000635292  0.0154703  0.003308806 0.005814030
+#> w2[1]            1.23736e-09  0.104371000  0.8942340  0.250328507 0.297036310
+#> w2[2]            3.40093e-11  0.044696000  0.8394000  0.193567686 0.270198114
+#> w2[3]            7.35510e-10  0.046303400  0.7523300  0.171911304 0.245240118
+#> w2[4]            2.28705e-08  0.314771000  0.9711330  0.384192500 0.341646975
+#> w3[1]            2.68280e-01  0.362352000  0.4518600  0.361978297 0.046968104
+#> w3[2]            1.96195e-01  0.281629000  0.3781900  0.282239031 0.047074898
+#> w3[3]            2.13739e-01  0.303768000  0.3972250  0.304349616 0.047556943
+#> w3[4]            2.75785e-06  0.040766100  0.1241470  0.047546975 0.041340863
+#> w3[5]            1.09743e-08  0.000148763  0.0227399  0.003886088 0.010114003
+#>                 Mode        MCerr MC%ofSD SSeff         AC.10     psrf
+#> B0                NA 0.0083843248     1.3  6303  2.903040e-03 1.000965
+#> B1                NA 0.0002708694     1.2  7093  1.677988e-02 1.000413
+#> B2                NA 0.0003956063     2.0  2412  9.860925e-02 1.001421
+#> B3                NA 0.0002828128     1.3  6091  3.259971e-02 1.009502
+#> phi_weight        NA 0.0001220182     1.3  6331 -3.837292e-05 1.000839
+#> phi_city_city_2   NA 0.0015076814     2.3  1861  1.370036e-01 1.001817
+#> phi_city_city_3   NA 0.0010250899     1.6  3691  6.330980e-02 1.001588
+#> w1[1]             NA 0.0005469099     2.3  1887  8.525232e-02 1.004265
+#> w1[2]             NA 0.0005768395     2.4  1727  1.226634e-01 1.000403
+#> w1[3]             NA 0.0005891752     2.5  1614  1.290483e-01 1.001294
+#> w1[4]             NA 0.0010801436    11.9    70  8.972487e-01 1.198355
+#> w1[5]             NA 0.0007924967    13.6    54  9.213906e-01 1.169921
+#> w2[1]             NA 0.0133283976     4.5   497  5.097496e-01 1.021924
+#> w2[2]             NA 0.0119401800     4.4   512  4.870058e-01 1.033214
+#> w2[3]             NA 0.0110146889     4.5   496  4.965258e-01 1.048808
+#> w2[4]             NA 0.0174002049     5.1   386  5.624401e-01 1.047184
+#> w3[1]             NA 0.0010777233     2.3  1899  1.071622e-01 1.015598
+#> w3[2]             NA 0.0011934638     2.5  1556  1.392284e-01 1.009907
+#> w3[3]             NA 0.0012152908     2.6  1531  1.631063e-01 1.013717
+#> w3[4]             NA 0.0029821629     7.2   192  7.413537e-01 1.134185
+#> w3[5]             NA 0.0010213382    10.1    98  8.538041e-01 1.087874
 ```
 
 We can analyze the mixing of the markov chains and corresponding
