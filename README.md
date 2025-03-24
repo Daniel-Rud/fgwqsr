@@ -15,7 +15,7 @@ introduced by Wheeler, David C et al. that fits Markov Chain Monte Carlo
 
 # Overview
 
-<br> For a binary outcome (FGWQSR also accomodates continuous and count outcomes), FGWQSR estimates parameters to the following model:
+<br> For a binary outcome, FGWQSR estimates parameters to the following model:
 
 <br>
 
