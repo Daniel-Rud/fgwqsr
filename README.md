@@ -17,6 +17,7 @@ in parallel through the runjags package.
 <br> FGWQSR estimates parameters to the following model:
 
 <br>
+
 $$
 y_i \sim \text{Bernoulli}(\pi_i)
 $$
