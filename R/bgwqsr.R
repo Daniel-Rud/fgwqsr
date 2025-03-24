@@ -220,9 +220,9 @@ create_jags_model_string = function(data,y, vars)
 }
 
 
-#' Fit a Bayesian Grouped Weighted Quantile Sum Regression Model
+#' Fit a Bayesian Grouped Weighted Quantile Sum Regression Model for binary outcomes
 #' @description
-#' Fits a BGWQSR using the runjags package in parallel over multiple cores
+#' Fits a BGWQSR using the runjags package in parallel over multiple cores for binary outcomes.
 #' @param formula  A formula for model fitting of BGWQSR.  Please see description for
 #' formula construction
 #' @param data dataframe that contains all covariates and the outcome data.

@@ -1238,7 +1238,7 @@ fgwqsr_caller = function(formulas, data, quantiles, family, vars, verbose, cores
 #' @return List with attributes from fgwqsr model fitting.
 #' @description
 #' Fits a group signed constrained logistic regression with
-#' inference for both group indices and single chemical effects on an entire
+#' inference for both group effects and single chemical effects on an entire
 #' dataset (without requiring any data splitting).
 #' @details
 #' The model formula that is passed to fgwqsr() is different than traditional
@@ -1642,6 +1642,8 @@ summary.fgwqsr = function(object, ...)
 
 }
 
+#' Print a fgwqsr model
+#' @export
 print.fgwqsr = function(object,...)
 {
 

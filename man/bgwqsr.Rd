@@ -2,7 +2,7 @@
 % Please edit documentation in R/bgwqsr.R
 \name{bgwqsr}
 \alias{bgwqsr}
-\title{Fit a Bayesian Grouped Weighted Quantile Sum Regression Model}
+\title{Fit a Bayesian Grouped Weighted Quantile Sum Regression Model for binary outcomes}
 \usage{
 bgwqsr(
   formula,
@@ -49,7 +49,7 @@ list with attributes from bgwqsr model fitting.
 Object from \code{run.jags} function call
 }
 \description{
-Fits a BGWQSR using the runjags package in parallel over multiple cores
+Fits a BGWQSR using the runjags package in parallel over multiple cores for binary outcomes.
 }
 \details{
 For additional instructions in using the \code{bgwqsr()} function,
