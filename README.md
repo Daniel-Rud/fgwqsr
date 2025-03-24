@@ -18,11 +18,11 @@ in parallel through the runjags package.
 
 <br>
 $$
-\begin{aligned}
-y_i &\sim \text{Bernoulli}(\pi_i) 
+y_i \sim \text{Bernoulli}(\pi_i)
+$$
 
-\text{logit}(\pi_i) &= c_0 + \sum\limits_{g = 1}^G \gamma_g \bigg( \sum\limits_{k = 1} ^{c_g} w_{g,k} \cdot q_{g,k,i}\bigg) + \sum_{r = 1}^R \phi_rz_{r,i} 
-\end{aligned}
+$$
+\text{logit}(\pi_i) = c_0+ \sum\limits_{g = 1}^G \gamma_g \bigg( \sum\limits_{k = 1} ^{c_g} w_{g,k} \cdot q_{g,k,i}\bigg) + \sum_{r = 1}^R \phi_rz_{r,i} 
 $$
 
 where
