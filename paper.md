@@ -31,9 +31,14 @@ bibliography: paper.bib
 # Summary
 **fix FG citation once finished in bib file **
 
-Environmental epidemiologists are often interested in assessing the effects of chemical and pollutant exposures on various health outcomes. Beyond single-constituent models, many established epidemiological methods for handling chemical/pollutant mixtures facilitate the joint adjustment of multiple exposures [@wqsr; @gwqsr; @bgwqsr; @Environmental_exposure_mixtures; @an_overview_of_methods; @sandy_cit]. These mixture models account for the high correlation among exposure constituents, which often arise from common sources.
+Researchers in environmental epidemiology frequently study the effects of chemical and pollutant
+exposures on health outcomes. While single-constituent models remain standard, recent
+epidemiological methods focus on modeling exposure mixtures jointly, accounting for the correlation
+between exposures arising from common sources [@wqsr; @gwqsr; @bgwqsr; @Environmental_exposure_mixtures; @an_overview_of_methods; @sandy_cit].
 
-Among existing approaches, Weighted Quantile Sum Regression (WQSR) has gained widespread use for evaluating associations between exposure mixtures and health outcomes [@wqsr; @gwqsr; @bgwqsr]. WQSR estimates both (1) group effects, which quantify the impact of a mixture group, and (2) sets of group weights, which represent the relative contributions of individual constituents within a mixture. In the binary outcome setting, the WQSR model is formulated as:
+
+Weighted Quantile Sum Regression (WQSR) has gained traction for analyzing associations
+between exposure mixtures and health outcomes [@wqsr; @gwqsr; @bgwqsr]. WQSR estimates both (1) group effects, which quantify the impact of a mixture group, and (2) sets of group weights, which represent the relative contributions of individual constituents within a mixture. In the binary outcome setting, the WQSR model is formulated as:
 
 $$
 \begin{aligned}
@@ -44,7 +49,7 @@ $$
 where, for subject  $i$, $y_i$  represents the observed disease outcome,  $\pi_i$ the probability of disease,   $q_{g,k,i}$ the exposure to chemical $k$ in mixture group $g$, and $z_{r,i}$ the $r^{th}$ confounder adjustment.  The weights for mixture group $g$ satisfy $\sum_{k=1}^{c_g} w_{g,k} = 1$ and $w_{g,k} \ge 0$. The parameter $\gamma_g$ represents the group effect for a given mixture group, capturing the impact of a one-quantile increase in all chemical constituents within the group.  WQSR models are constrained such that all constituents from a particular mixture group have effects in the same direction, which functions as a form of regularization to stabilize the effect estimates of the highly correlated exposures.  
 
 
-The `fgwqsr` package implements the Frequentist Grouped Weighted Quantile Sum Regression (FGWQSR) model as described in @fgwqsr. Its primary function, `fgwqsr`, accommodates binary, continuous, and count outcome types. To fit a FGWQSR model, users must specify a special model formula using vertical bars (`|`) to separate mixture group elements and a forward slash (`/`) to separate mixture groups from unconstrained covariates. Categorical covariates must be prefixed with `i.`. For instance, in an analysis with outcome $Y$, mixture groups $\{A_1, A_2\}$ and $\{B_1, B_2\}$, and confounders $\{W_1, W_2, W_3\}$ (where $W_1, W_2$ are numeric and $W_3$ is categorical), the model formula is:
+The `fgwqsr` package implements the Frequentist Grouped Weighted Quantile Sum Regression (FGWQSR) model introduced in @fgwqsr. Its main function, `fgwqsr`, accommodates binary, continuous, and count outcome types. To fit a FGWQSR model, users must specify a special model formula using vertical bars (`|`) to separate mixture group elements and a forward slash (`/`) to separate mixture groups from unconstrained covariates. Categorical covariates must be prefixed with `i.`. For instance, in an analysis with outcome $Y$, mixture groups $\{A_1, A_2\}$ and $\{B_1, B_2\}$, and confounders $\{W_1, W_2, W_3\}$ (where $W_1, W_2$ are numeric and $W_3$ is categorical), the model formula is:
 ```r
 model_formula = Y ~ A1 + A2 | B1 + B2 / W_1 + W_2 + i.W_3
 ```
@@ -76,7 +81,7 @@ Results can be examined using `summary(fgwqsr_model)`, which provides parameter 
 
 An optional tuning parameter, `zero_threshold_cutoff`, is used in the non-regular statistical testing procedure. This parameter determines how often near-boundary estimates are assigned a boundary cone in the constrained multivariate normal Monte Carlo inference procedure. A default value of 0.5 has been shown to perform well across various scenarios, though reasonable values range from [0.05, 0.5]. More details are provided in @fgwqsr.
 
-In addition to FGWQSR, the package includes an implementation of Bayesian Grouped Weighted Quantile Sum Regression (BGWQSR) for binary outcomes. Unlike the BayesGWQS package, our implementation leverages the runjags package for parallelized Markov Chain Monte Carlo (MCMC) sampling. BGWQSR models can be fitted using the `bgwqsr` function, with additional MCMC control parameters available. Visualization tools such as `plot_results`, `plot_betas`, and `plot_weights` provide graphical summaries of group effects, weights, and confounder estimates with posterior credible intervals.
+In addition to FGWQSR, the package includes an implementation of Bayesian Grouped Weighted Quantile Sum Regression (BGWQSR) for binary outcomes. Unlike the BayesGWQS package, our implementation leverages the `runjags` package for parallelized Markov Chain Monte Carlo (MCMC) sampling. BGWQSR models can be fitted using the `bgwqsr` function, with additional MCMC control parameters available. Visualization tools such as `plot_results`, `plot_betas`, and `plot_weights` provide graphical summaries of group effects, weights, and confounder estimates with posterior credible intervals.
 
 For further guidance, see the package vignette [here](https://github.com/Daniel-Rud/fgwqsr).
 
