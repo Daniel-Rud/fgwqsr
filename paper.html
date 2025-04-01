@@ -381,18 +381,15 @@ Grouped Weighted Quantile Sum Regression</h1>
 
 <div id="summary" class="section level1">
 <h1>Summary</h1>
-<p><strong>fix FG citation once finished in bib file </strong></p>
-<p>Environmental epidemiologists are often interested in assessing the
-effects of chemical and pollutant exposures on various health outcomes.
-Beyond single-constituent models, many established epidemiological
-methods for handling chemical/pollutant mixtures facilitate the joint
-adjustment of multiple exposures <span class="citation">(Carrico et al.
-2015; Wheeler et al. 2021a, 2021b; Hamra and Buckley 2018; Gibson et al.
-2019; Joubert et al. 2022)</span>. These mixture models account for the
-high correlation among exposure constituents, which often arise from
-common sources.</p>
+<p>Environmental epidemiologists frequently study the effects of
+chemical and pollutant exposures on health outcomes. Beyond
+single-constituent models, recent epidemiological methods focus on
+modeling exposure mixtures jointly, accounting for the correlation
+between exposures arising from common sources <span class="citation">(Carrico et al. 2015; Wheeler et al. 2021a, 2021b;
+Hamra and Buckley 2018; Gibson et al. 2019; Joubert et al.
+2022)</span>.</p>
 <p>Among existing approaches, Weighted Quantile Sum Regression (WQSR)
-has gained widespread use for evaluating associations between exposure
+has gained traction for evaluating associations between exposure
 mixtures and health outcomes <span class="citation">(Carrico et al.
 2015; Wheeler et al. 2021a, 2021b)</span>. WQSR estimates both (1) group
 effects, which quantify the impact of a mixture group, and (2) sets of
@@ -410,17 +407,16 @@ y_i &amp;\sim \text{Bernoulli}(\pi_i) \\
 <span class="math inline">\(y_i\)</span> represents the observed disease
 outcome, <span class="math inline">\(\pi_i\)</span> the probability of
 disease, <span class="math inline">\(q_{g,k,i}\)</span> the exposure to
-chemical <span class="math inline">\(k\)</span> in mixture group <span class="math inline">\(g\)</span>, and <span class="math inline">\(z_{r,i}\)</span> represents the the <span class="math inline">\(r^{th}\)</span> confounder adjustment for
-individual <span class="math inline">\(i\)</span>. The weights for
-mixture group <span class="math inline">\(g\)</span> satisfy <span class="math inline">\(\sum_{k=1}^{c_g} w_{g,k} = 1\)</span> and <span class="math inline">\(w_{g,k} \ge 0\)</span>. The parameter <span class="math inline">\(\gamma_g\)</span> represents the group effect for
+chemical <span class="math inline">\(k\)</span> in mixture group <span class="math inline">\(g\)</span>, and <span class="math inline">\(z_{r,i}\)</span> the <span class="math inline">\(r^{th}\)</span> confounder adjustment. The weights
+for mixture group <span class="math inline">\(g\)</span> satisfy <span class="math inline">\(\sum_{k=1}^{c_g} w_{g,k} = 1\)</span> and <span class="math inline">\(w_{g,k} \ge 0\)</span>. The parameter <span class="math inline">\(\gamma_g\)</span> represents the group effect for
 a given mixture group, capturing the impact of a one-quantile increase
-in all chemical constituents within the group on the risk of the
-outcome. WQSR models are constrained such that all constituents from a
-particular mixture group have effects in the same direction, which
-functions as a form of regularization to stabilize the effect estimates
-of the highly correlated exposures.</p>
+in all chemical constituents within the group. WQSR models are
+constrained such that all constituents from a particular mixture group
+have effects in the same direction, which functions as a form of
+regularization to stabilize the effect estimates of the highly
+correlated exposures.</p>
 <p>The <code>fgwqsr</code> package implements the Frequentist Grouped
-Weighted Quantile Sum Regression (FGWQSR) model as described in <span class="citation">Rud et al. (2025)</span>. Its primary function,
+Weighted Quantile Sum Regression (FGWQSR) model introduced in <span class="citation">Rud et al. (2025)</span>. Its main function,
 <code>fgwqsr</code>, accommodates binary, continuous, and count outcome
 types. To fit a FGWQSR model, users must specify a special model formula
 using vertical bars (<code>|</code>) to separate mixture group elements
@@ -432,7 +428,7 @@ is:</p>
 <p>If no adjusting covariates are included, no forward slash is
 required:</p>
 <pre class="r"><code>model_formula = Y ~ A1 + A2 | B1 + B2 </code></pre>
-<p>For a single mixture group, vertical bars are unnecessary:</p>
+<p>For a single mixture group, vertical bars are not necessary:</p>
 <pre class="r"><code>model_formula = Y ~ A1 + A2 / W_1 + W_2 + i.W_3</code></pre>
 <p>Given <code>model_formula</code>, the outcome family type
 <code>family</code> being one of (<code>&quot;binomial&quot;</code>,
@@ -463,10 +459,10 @@ details are provided in <span class="citation">Rud et al.
 <p>In addition to FGWQSR, the package includes an implementation of
 Bayesian Grouped Weighted Quantile Sum Regression (BGWQSR) for binary
 outcomes. Unlike the BayesGWQS package, our implementation leverages the
-runjags package for parallelized Markov Chain Monte Carlo (MCMC)
-sampling. BGWQSR models can be fitted using the <code>bgwqsr</code>
-function, with additional MCMC control parameters available.
-Visualization tools such as <code>plot_results</code>,
+<code>runjags</code> package for parallelized Markov Chain Monte Carlo
+(MCMC) sampling. BGWQSR models can be fitted using the
+<code>bgwqsr</code> function, with additional MCMC control parameters
+available. Visualization tools such as <code>plot_results</code>,
 <code>plot_betas</code>, and <code>plot_weights</code> provide graphical
 summaries of group effects, weights, and confounder estimates with
 posterior credible intervals.</p>
@@ -537,7 +533,7 @@ Rud, Daniel, Md Mostafijur Rahman, Anny H. Xiang, Rob McConnell, Fred
 Lurmann, Michael J. Kleeman, Joel Schwartz, Zhanghua Chen, Sandy Eckel,
 and Juan Pablo Lewinger. 2025. <span>“Frequentist Grouped Weighted
 Quantile Sum Regression for Correlated Chemical Mixtures.”</span>
-<em>Statistics in Medicine</em> 20 (1): 100–120.
+<em>Statistics in Medicine</em>. <a href="https://doi.org/10.1002/sim.70078">https://doi.org/10.1002/sim.70078</a>.
 </div>
 <div id="ref-gwqsr" class="csl-entry">
 Wheeler, David C., Salem Rustom, Matthew Carli, Todd P. Whitehead, Mary

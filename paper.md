@@ -29,7 +29,6 @@ bibliography: paper.bib
 ---
 
 # Summary
-**fix FG citation once finished in bib file **
 
 Environmental epidemiologists frequently study the effects of chemical and pollutant
 exposures on health outcomes. Beyond single-constituent models, recent
