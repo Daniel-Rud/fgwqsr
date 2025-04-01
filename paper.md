@@ -31,14 +31,13 @@ bibliography: paper.bib
 # Summary
 **fix FG citation once finished in bib file **
 
-Researchers in environmental epidemiology frequently study the effects of chemical and pollutant
-exposures on health outcomes. While single-constituent models remain standard, recent
+Environmental epidemiologists frequently study the effects of chemical and pollutant
+exposures on health outcomes. Beyond single-constituent models, recent
 epidemiological methods focus on modeling exposure mixtures jointly, accounting for the correlation
 between exposures arising from common sources [@wqsr; @gwqsr; @bgwqsr; @Environmental_exposure_mixtures; @an_overview_of_methods; @sandy_cit].
 
 
-Weighted Quantile Sum Regression (WQSR) has gained traction for analyzing associations
-between exposure mixtures and health outcomes [@wqsr; @gwqsr; @bgwqsr]. WQSR estimates both (1) group effects, which quantify the impact of a mixture group, and (2) sets of group weights, which represent the relative contributions of individual constituents within a mixture. In the binary outcome setting, the WQSR model is formulated as:
+Among existing approaches, Weighted Quantile Sum Regression (WQSR) has gained traction for evaluating associations between exposure mixtures and health outcomes [@wqsr; @gwqsr; @bgwqsr]. WQSR estimates both (1) group effects, which quantify the impact of a mixture group, and (2) sets of group weights, which represent the relative contributions of individual constituents within a mixture. In the binary outcome setting, the WQSR model is formulated as:
 
 $$
 \begin{aligned}
@@ -60,7 +59,7 @@ If no adjusting covariates are included, no forward slash is required:
 model_formula = Y ~ A1 + A2 | B1 + B2 
 ```
 
-For a single mixture group, vertical bars are unnecessary:
+For a single mixture group, vertical bars are not necessary:
 
 ```r
 model_formula = Y ~ A1 + A2 / W_1 + W_2 + i.W_3
