@@ -20,6 +20,8 @@ affiliations:
  - name: Department of Population and Public Health Sciences, University of Southern California, USA
    index: 1
 date: 24 March 2025
+repository: https://github.com/Daniel-Rud/fgwqsr-JOSS
+branch: main
 bibliography: paper.bib
 
 # Optional fields if submitting to a AAS journal too, see this blog post:
