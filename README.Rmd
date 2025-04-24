@@ -13,7 +13,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-# fgwqsr -- Frequentist Grouped Weighted Quantile Sum Regression
+# fgwqsr -- Frequentist Grouped Weighted Quantile Sum Regression <img src="man/figures/FGWQSR_hex.png" width="100" align="right" />
 Fully frequentist model fitting procedure for the weighted quantile sum regression formulation.  Included in this package is an implementation of Bayesian Grouped Weighted Quantile Sum Regression (bgwqsr) introduced by Wheeler, David C et al. that fits Markov Chain Monte Carlo (MCMC) chains in parallel through the runjags package.  
 
 <!-- badges: start -->
@@ -30,6 +30,7 @@ FGWQSR estimates parameters to the following model:
 $$y_i \sim \text{Bernoulli}(\pi_i) $$
 
 $$\text{logit}(\pi_i) = c_0+ \sum\limits_{g = 1}^G \gamma_g \bigg( \sum\limits_{k = 1} ^{c_g} w_{g,k} \cdot q_{g,k,i}\bigg) + \sum_{r = 1}^R \phi_rz_{r,i} $$
+
 where 
 
 * $y_i$ - outcome variable (coded 0 1)
