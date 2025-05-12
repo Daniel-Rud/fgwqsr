@@ -618,15 +618,28 @@ logistic_hessian = function(B,design_matrix)
   return(hessian)
 }
 
+# poisson_hessian_old = function(B,design_matrix)
+# {
+#   design_matrix = design_matrix %>% as.matrix
+#
+#   lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1))
+#
+#   W = lin_pred %>% exp %>% as.numeric %>% diag
+#
+#   hessian = -1*crossprod(design_matrix, W) %*% design_matrix
+#
+#   return(hessian)
+# }
+
 poisson_hessian = function(B,design_matrix)
 {
   design_matrix = design_matrix %>% as.matrix
 
   lin_pred = tcrossprod(design_matrix,matrix(B, nrow = 1))
 
-  W = lin_pred %>% exp %>% as.numeric %>% diag
+  W = lin_pred %>% exp %>% as.numeric
 
-  hessian = -1*crossprod(design_matrix, W) %*% design_matrix
+  hessian = -1 * crossprod(design_matrix * W, design_matrix)
 
   return(hessian)
 }
@@ -1481,7 +1494,7 @@ fgwqsr = function(formula, data, quantiles = 5,
     message("Fitting full and nested FGWQSR models...")
     progressr::with_progress(fits <- fgwqsr_caller(formulas, data, quantiles,family,vars, verbose,
                                         cores, optim_control_list, offset))
-    message("\nGenerating LRT distributions under H0...")
+    message("\nPerforming Likelihood Ratio Test Inference...")
   }else
   {
     fits <- fgwqsr_caller(formulas, data, quantiles,family, vars, verbose, cores, optim_control_list, offset)
@@ -1499,15 +1512,12 @@ fgwqsr = function(formula, data, quantiles = 5,
   # outcome variable vector
   y = fgwqsr_fit$y
 
-  # new data with categorical variables dummified and quantile exposures
-  new_data = fgwqsr_fit$new_data
-
   # final ML solution in logistic regression formulation
   params_logistic_form = fgwqsr_fit$ML_sol$par
 
   # compute inverse of observed fisher info at constrained logistic regression
   # ML solution
-  design_matrix = cbind(intercept = rep(1, nrow(new_data)),new_data[,-1])
+  design_matrix = cbind(intercept = rep(1, nrow(fgwqsr_fit$new_data)),fgwqsr_fit$new_data[,-1])
 
   # compute fisher information based on proper family
   observed_fisher = NULL
@@ -1569,7 +1579,7 @@ fgwqsr = function(formula, data, quantiles = 5,
 
   # for summary method
 
-  n = nrow(new_data)
+  n = nrow(fgwqsr_fit$new_data)
 
   full_ll_val = ll_models[1]
 
