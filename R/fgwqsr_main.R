@@ -1712,6 +1712,80 @@ print.fgwqsr = function(object,...)
 
 }
 
+#' Plot a fgwqsr model fit
+#' @param object a fitted object from a fgwqsr() call
+#' @description
+#'  Plots a fgwqsr object.
+#' @export
+plot.fgwqsr = function(object, ...)
+{
+
+  # check for fgwqsr object
+  if(!methods::is(object, "fgwqsr"))
+  {
+    stop("Must pass the object output of the fgwqsr() function.  For example...
+         some_model = fgwqsr(formula, data)
+         summary(some_model)")
+  }
+
+  # Weight Forest Plot
+  chem_names = rownames(object$inference_frames$weight_frame)
+  plot_weight_data = data.frame(chem_names = factor(chem_names, levels = rev(chem_names),
+                                                    ordered = T),
+                                weight_estimate = object$inference_frames$weight_frame[,1],
+                                significant =
+                                  factor(ifelse(object$inference_frames$weight_frame[,3] <
+                                                  .05, "Yes", "No")),
+                                group_number = factor(rep(1:length(object$vars$mixture),
+                                                          times = sapply(object$vars$mixture, length))))
+
+  weight_plot = ggplot(
+    data = plot_weight_data,
+    mapping = aes(x = weight_estimate, y = chem_names,
+                  color = group_number, shape = significant, size = significant)
+  ) +
+    ggplot2::geom_point() +
+    ggplot2::xlab("Weight Estimate") +
+    ggplot2::ylab("Chemical Name") +
+    ggplot2::labs(color = "Chemical Group") +
+    ggplot2::scale_shape_manual(labels = c("No", "Yes"), values = c(16, 8)) +
+    ggplot2::scale_size_manual(labels = c("No", "Yes"), values = c(2, 3)) +
+    ggplot2::labs(shape = latex2exp::TeX("Significant at $\\alpha = 0.05$?")) +
+    ggplot2::guides(size = "none") +
+    ggplot2::theme(axis.text = ggplot2::element_text(size = 10),
+          axis.title = ggplot2::element_text(size = 12))
+
+  # Group Index Plot
+  plot_group_data = data.frame(group_names = factor(rownames(object$inference_frames$group_index_frame),
+                                                    levels = rev(rownames(object$inference_frames$group_index_frame)),
+                                                    ordered = T),
+                               group_index_estimate = object$inference_frames$group_index_frame[,1],
+                               significant =
+                                 factor(ifelse(object$inference_frames$group_index_frame[,3] <
+                                                 .05, "Yes", "No")))
+
+  group_plot = ggplot2::ggplot(
+    data = plot_group_data,
+    mapping = ggplot2::aes(x = group_index_estimate, y = group_names,
+                  shape = significant, size = significant)
+  ) +
+    ggplot2::geom_point(color = "steelblue") +
+    ggplot2::xlab("Group Index Estimate") +
+    ggplot2::ylab("Group Name") +
+    ggplot2::scale_shape_manual(labels = c("No", "Yes"), values = c(16, 8)) +
+    ggplot2::scale_size_manual(labels = c("No", "Yes"), values = c(2, 3)) +
+    ggplot2::labs(shape = latex2exp::TeX("Significant at $\\alpha = 0.05$?")) +
+    ggplot2::guides(size = "none") +
+    ggplot2::geom_vline(xintercept = 0, linetype = "dashed") +
+    ggplot2::theme(axis.text = ggplot2::element_text(size = 10),
+         axis.title = ggplot2::element_text(size = 12))
+
+  combined_plot = ggpubr::ggarrange(group_plot, weight_plot, ncol = 2, nrow = 1, legend = "bottom")
+
+  return(combined_plot)
+
+}
+
 # Nonparametric bootstrap doesnt work in this situation -- appeals to central limit theorem,
 # requires some smoothness of the functional statistic fo the bootstrap
 
