@@ -3,11 +3,15 @@
 
 # fgwqsr – Frequentist Grouped Weighted Quantile Sum Regression <img src="man/figures/FGWQSR_hex.png" width="100" align="right" />
 
-Fully frequentist model fitting procedure for the weighted quantile sum
-regression formulation. Included in this package is an implementation of
-Bayesian Grouped Weighted Quantile Sum Regression (bgwqsr) introduced by
-Wheeler, David C et al. that fits Markov Chain Monte Carlo (MCMC) chains
-in parallel through the runjags package.
+Fully frequentist estimation and inference for Weighted Quantile Sum
+Regression, enabling inference on both individual and grouped pollutants
+without the need for data splitting. [Rud et al
+(2025)](https://onlinelibrary.wiley.com/doi/full/10.1002/sim.70078).
+
+Also included in this package is an implementation of Bayesian Grouped
+Weighted Quantile Sum Regression (bgwqsr) introduced by Wheeler, David C
+et al. that fits Markov Chain Monte Carlo (MCMC) chains in parallel
+through the runjags package.
 
 <!-- badges: start -->
 <!-- badges: end -->
@@ -54,29 +58,25 @@ any data splitting
 # Installation
 
 You can install the development version of fgwqsr from
-[GitHub](https://github.com/) with:
+[GitHub](https://github.com/Daniel-Rud/fgwqsr) with:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("Daniel-Rud/fgwqsr")
+remotes::install_github("Daniel-Rud/fgwqsr")
 #> Using github PAT from envvar GITHUB_PAT. Use `gitcreds::gitcreds_set()` and unset GITHUB_PAT in .Renviron (or elsewhere) if you want to use the more secure git credential store instead.
-#> Downloading GitHub repo Daniel-Rud/fgwqsr@HEAD
-#> 
-#> ── R CMD build ─────────────────────────────────────────────────────────────────
-#>      checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpNaCE4k/remotes17c3f61554d60/Daniel-Rud-fgwqsr-52f0b8b/DESCRIPTION’ ...  ✔  checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpNaCE4k/remotes17c3f61554d60/Daniel-Rud-fgwqsr-52f0b8b/DESCRIPTION’
-#>   ─  preparing ‘fgwqsr’:
-#>    checking DESCRIPTION meta-information ...  ✔  checking DESCRIPTION meta-information
-#>   ─  checking for LF line-endings in source and make files and shell scripts
-#>   ─  checking for empty or unneeded directories
-#>      Omitted ‘LazyData’ from DESCRIPTION
-#>   ─  building ‘fgwqsr_0.1.0.tar.gz’
-#>      
-#> 
+#> Skipping install of 'fgwqsr' from a github remote, the SHA1 (883d80c2) has not changed since last install.
+#>   Use `force = TRUE` to force installation
 ```
 
 ``` r
 library(fgwqsr)
 ```
+
+The `fgwqsr` package depends on JAGS installation through the `runjags`
+package, which is used to fit BGWQSR models. Please see the `runjags`
+installation instructions for your operating system
+[here](https://cran.r-project.org/web/packages/runjags/vignettes/Installation.html).
+Note that JAGS is not required to fit FGWQSR models.
 
 In order to use fgwqsr, let us first generate some data
 
@@ -115,8 +115,8 @@ ess = list(n = n,
            weights = list(w1 = c(1/3,1/3,1/3,0,0), 
                           w2 = c(1/2,1/2, 0, 0), 
                           w3 = c(1/3,1/3,1/3,0,0)
-                          )
            )
+)
 
 ccs = c(.5,.1)
 ```
@@ -197,19 +197,44 @@ Next, we quantize the exposure variables in order to make comparisons
 between the true underlying oracle model and FGWQSR estimates. Note that
 we will subtract 1 from our quantized variables, so that the first
 quintile corresponds to the measure of 0. By doing this, we can ensure
-that we have an interpretable model intercept.
+that we have an interpretable model intercept. For ease of
+understanding, we give the chemical variables arbitrary names of
+chemical constituents.
 
 ``` r
 chem_data = apply(chem_data, MARGIN = 2, statar::xtile, n = 5) - 1
+colnames(chem_data) = chemicals <- c(
+  "PM2.5", 
+  "NO2", 
+  "O3", 
+  "SO2", 
+  "CO", 
+  "Lead", 
+  "Mercury", 
+  "Arsenic", 
+  "Cadmium", 
+  "Benzene", 
+  "Toluene", 
+  "Phthalates", 
+  "Bisphenol_A", 
+  "Polychlorinated_Biphenyls"
+)
 
 head(chem_data %>% data.frame)
-#>   X1 X2 X3 X4 X5 X6 X7 X8 X9 X10 X11 X12 X13 X14
-#> 1  0  1  0  0  3  1  4  3  2   0   0   0   0   0
-#> 2  0  1  1  3  1  0  0  1  1   2   2   2   1   1
-#> 3  1  0  0  0  2  0  0  2  1   3   1   1   0   1
-#> 4  3  0  3  1  0  4  4  3  4   2   1   3   2   3
-#> 5  2  3  4  3  1  4  2  0  3   4   1   1   1   3
-#> 6  3  2  1  3  4  2  1  2  0   2   2   2   1   0
+#>   PM2.5 NO2 O3 SO2 CO Lead Mercury Arsenic Cadmium Benzene Toluene Phthalates
+#> 1     0   1  0   0  3    1       4       3       2       0       0          0
+#> 2     0   1  1   3  1    0       0       1       1       2       2          2
+#> 3     1   0  0   0  2    0       0       2       1       3       1          1
+#> 4     3   0  3   1  0    4       4       3       4       2       1          3
+#> 5     2   3  4   3  1    4       2       0       3       4       1          1
+#> 6     3   2  1   3  4    2       1       2       0       2       2          2
+#>   Bisphenol_A Polychlorinated_Biphenyls
+#> 1           0                         0
+#> 2           1                         1
+#> 3           0                         1
+#> 4           2                         3
+#> 5           1                         3
+#> 6           1                         0
 ```
 
 <br>
@@ -236,13 +261,20 @@ data = data.frame(y = y, chem_data)
 
 # view dataset
 head(data)
-#>   y X1 X2 X3 X4 X5 X6 X7 X8 X9 X10 X11 X12 X13 X14
-#> 1 0  0  1  0  0  3  1  4  3  2   0   0   0   0   0
-#> 2 1  0  1  1  3  1  0  0  1  1   2   2   2   1   1
-#> 3 0  1  0  0  0  2  0  0  2  1   3   1   1   0   1
-#> 4 0  3  0  3  1  0  4  4  3  4   2   1   3   2   3
-#> 5 0  2  3  4  3  1  4  2  0  3   4   1   1   1   3
-#> 6 1  3  2  1  3  4  2  1  2  0   2   2   2   1   0
+#>   y PM2.5 NO2 O3 SO2 CO Lead Mercury Arsenic Cadmium Benzene Toluene Phthalates
+#> 1 0     0   1  0   0  3    1       4       3       2       0       0          0
+#> 2 1     0   1  1   3  1    0       0       1       1       2       2          2
+#> 3 0     1   0  0   0  2    0       0       2       1       3       1          1
+#> 4 0     3   0  3   1  0    4       4       3       4       2       1          3
+#> 5 0     2   3  4   3  1    4       2       0       3       4       1          1
+#> 6 1     3   2  1   3  4    2       1       2       0       2       2          2
+#>   Bisphenol_A Polychlorinated_Biphenyls
+#> 1           0                         0
+#> 2           1                         1
+#> 3           0                         1
+#> 4           2                         3
+#> 5           1                         3
+#> 6           1                         0
 ```
 
 <br> Now, we are ready to fit a FGWQSR model
@@ -310,7 +342,7 @@ variables. To do this, we will supply the model formula as follows:
 
 ``` r
 
-mod_formula = y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X12 + X13 + X14
+mod_formula = y ~ PM2.5 + NO2 + O3 + SO2 + CO | Lead + Mercury + Arsenic + Cadmium | Benzene + Toluene + Phthalates + Bisphenol_A + Polychlorinated_Biphenyls
 ```
 
 <br>
@@ -328,7 +360,7 @@ fgwqsr_fit = fgwqsr(formula = mod_formula,
                     verbose = T)
 #> Fitting full and nested FGWQSR models...
 #> 
-#> Generating LRT distributions under H0...
+#> Performing Likelihood Ratio Test Inference...
 ```
 
 <br>
@@ -340,7 +372,7 @@ We can see the model summary using the call `summary()`
 summary(fgwqsr_fit)
 #> 
 #> Call: 
-#> FGWQSR with formula 'y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X12 + X13 + X14' on n = 10000 observations and family = 'binomial'.
+#> FGWQSR with formula 'y ~ PM2.5 + NO2 + O3 + SO2 + CO | Lead + Mercury + Arsenic + Cadmium | Benzene + Toluene + Phthalates + Bisphenol_A + Polychlorinated_Biphenyls' on n = 10000 observations and family = 'binomial'.
 #> 
 #> 10000 samples used for simulated LRT distirbution.
 #> 
@@ -355,25 +387,25 @@ summary(fgwqsr_fit)
 #> 
 #> Estimates and Inference for Weights
 #> 
-#>    Weight Estimate       LRT P-value    
-#> X1       0.2999211 112.43088  <2e-16 ***
-#> X2       0.3417464 143.95821  <2e-16 ***
-#> X3       0.3225850 128.82142  <2e-16 ***
-#> X4       0.0357475   1.58066  0.0867 .  
-#> X5       0.0000000   0.00000  1.0000    
+#>       Weight Estimate       LRT P-value    
+#> PM2.5       0.2999211 112.43088  <2e-16 ***
+#> NO2         0.3417464 143.95821  <2e-16 ***
+#> O3          0.3225850 128.82142  <2e-16 ***
+#> SO2         0.0357475   1.58066  0.0867 .  
+#> CO          0.0000000   0.00000  1.0000    
 #> -------------------------------------------------
-#>    Weight Estimate     LRT P-value  
-#> X6               0 0.00000  1.0000  
-#> X7               0 0.00000  1.0000  
-#> X8               0 0.00000  1.0000  
-#> X9               1 1.45345  0.0828 .
+#>         Weight Estimate     LRT P-value  
+#> Lead                  0 0.00000  1.0000  
+#> Mercury               0 0.00000  1.0000  
+#> Arsenic               0 0.00000  1.0000  
+#> Cadmium               1 1.45345  0.0828 .
 #> -------------------------------------------------
-#>     Weight Estimate     LRT P-value    
-#> X10        0.339334 54.3167  <2e-16 ***
-#> X11        0.347920 57.0600  <2e-16 ***
-#> X12        0.312745 46.7864  <2e-16 ***
-#> X13        0.000000  0.0000       1    
-#> X14        0.000000  0.0000       1    
+#>                           Weight Estimate     LRT P-value    
+#> Benzene                          0.339334 54.3167  <2e-16 ***
+#> Toluene                          0.347920 57.0600  <2e-16 ***
+#> Phthalates                       0.312745 46.7864  <2e-16 ***
+#> Bisphenol_A                      0.000000  0.0000       1    
+#> Polychlorinated_Biphenyls        0.000000  0.0000       1    
 #> -------------------------------------------------
 #> 
 #> Estimates and Inference for Intercept and Adjusting Covariates
@@ -383,9 +415,19 @@ summary(fgwqsr_fit)
 #> 
 #> Significance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' 
 #> 
-#> Total runtime for FGWQSR:  1.67 minutes on 10 cores.
+#> Total runtime for FGWQSR:  1.41 minutes on 10 cores.
 ```
 
+<br>
+
+We can plot a visual summary of the model output using `plot()`
+
+``` r
+
+plot(fgwqsr_fit)
+```
+
+<img src="man/figures/README-unnamed-chunk-12-1.png" width="100%" />
 <br> We can compare the true underlying group indices and chemical
 weights with their estimates, along with if the correct inference is
 made. Note that dashes are inserted for the true weights of group 2,
@@ -394,8 +436,8 @@ unidentifiable).
 
 ``` r
 group_index_frame = data.frame("True Group Index" = exp(gamma),
-                          "Estimated Group Index" = exp(fgwqsr_fit$inference_frames$group_index_frame[,1]) %>% round(3),
-                          "Signficiant?" = ifelse(fgwqsr_fit$inference_frames$group_index_frame[,3] < .05, "Yes", "No"), check.names = F)
+                               "Estimated Group Index" = exp(fgwqsr_fit$inference_frames$group_index_frame[,1]) %>% round(3),
+                               "Signficiant?" = ifelse(fgwqsr_fit$inference_frames$group_index_frame[,3] < .05, "Yes", "No"), check.names = F)
 
 rownames(group_index_frame) = rownames(fgwqsr_fit$inference_frames$group_index_frame)
 
@@ -440,8 +482,8 @@ dataset, while categorical variables need to be referenced using the
 prefix `i.`. We will illustrate this through an example where we create
 a continuous `weight` variable and a categorical `city` variable. We
 will give an effect (in log odds scale) of .5 to weight, .2 to the
-comparison between city 2 and reference city 1, and -1 to the comparison
-between city 3 and city 1.
+comparison between San Bernardino and reference Los Angeles, and -1 to
+the comparison between Santa Barbara and Los Angeles.
 
 <br>
 
@@ -449,7 +491,7 @@ between city 3 and city 1.
 set.seed(11)
 # create adjusting covariates
 weight = rnorm(n = n, mean = 68, sd = 2.5)
-city = sample(c("city_1", "city_2", "city_3"), size = n, replace = T)
+city = sample(c("Los_Angeles", "San_Bernardino", "Santa_Barbara"), size = n, replace = T)
 
 # need to adjust intercept for case control ratio
 intercept = -3.3
@@ -474,13 +516,20 @@ y = sapply(pi, FUN = function(p) rbinom(1,1,p))
 data = data.frame(y = y, chem_data, weight = weight, city = city)
 
 head(data)
-#>   y X1 X2 X3 X4 X5 X6 X7 X8 X9 X10 X11 X12 X13 X14   weight   city
-#> 1 1  0  1  0  0  3  1  4  3  2   0   0   0   0   0 66.52242 city_1
-#> 2 1  0  1  1  3  1  0  0  1  1   2   2   2   1   1 68.06649 city_1
-#> 3 1  1  0  0  0  2  0  0  2  1   3   1   1   0   1 64.20862 city_3
-#> 4 1  3  0  3  1  0  4  4  3  4   2   1   3   2   3 64.59337 city_2
-#> 5 0  2  3  4  3  1  4  2  0  3   4   1   1   1   3 70.94622 city_3
-#> 6 1  3  2  1  3  4  2  1  2  0   2   2   2   1   0 65.66462 city_1
+#>   y PM2.5 NO2 O3 SO2 CO Lead Mercury Arsenic Cadmium Benzene Toluene Phthalates
+#> 1 1     0   1  0   0  3    1       4       3       2       0       0          0
+#> 2 1     0   1  1   3  1    0       0       1       1       2       2          2
+#> 3 0     1   0  0   0  2    0       0       2       1       3       1          1
+#> 4 1     3   0  3   1  0    4       4       3       4       2       1          3
+#> 5 1     2   3  4   3  1    4       2       0       3       4       1          1
+#> 6 1     3   2  1   3  4    2       1       2       0       2       2          2
+#>   Bisphenol_A Polychlorinated_Biphenyls   weight           city
+#> 1           0                         0 66.52242    Los_Angeles
+#> 2           1                         1 68.06649    Los_Angeles
+#> 3           0                         1 64.20862  Santa_Barbara
+#> 4           2                         3 64.59337 San_Bernardino
+#> 5           1                         3 70.94622  Santa_Barbara
+#> 6           1                         0 65.66462    Los_Angeles
 ```
 
 <br> Now, we specify the formula to include the continuous and
@@ -488,17 +537,17 @@ categorical variables and call `fgwqsr()`.
 
 ``` r
 
-mod_formula_adj = y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X12 + X13 + X14 / weight + i.city
+mod_formula_adj = y ~ PM2.5 + NO2 + O3 + SO2 + CO | Lead + Mercury + Arsenic + Cadmium | Benzene + Toluene + Phthalates + Bisphenol_A + Polychlorinated_Biphenyls / weight + i.city
 
 fgwqsr_fit_adj = fgwqsr(formula = mod_formula_adj,
-                    data = data,
-                    quantiles = 5,
-                    family = 'binomial',
-                    n_mvn_sims = 10000,
-                    verbose = T)
+                        data = data,
+                        quantiles = 5,
+                        family = 'binomial',
+                        n_mvn_sims = 10000,
+                        verbose = T)
 #> Fitting full and nested FGWQSR models...
 #> 
-#> Generating LRT distributions under H0...
+#> Performing Likelihood Ratio Test Inference...
 ```
 
 <br> Again, we use the function `summary()` to view the results of the
@@ -509,56 +558,67 @@ fgwqsr_fit_adj = fgwqsr(formula = mod_formula_adj,
 summary(fgwqsr_fit_adj)
 #> 
 #> Call: 
-#> FGWQSR with formula 'y ~ X1 + X2 + X3 + X4 + X5 | X6 + X7 + X8 + X9 | X10 + X11 + X12 + X13 + X14/weight + i.city' on n = 10000 observations and family = 'binomial'.
+#> FGWQSR with formula 'y ~ PM2.5 + NO2 + O3 + SO2 + CO | Lead + Mercury + Arsenic + Cadmium | Benzene + Toluene + Phthalates + Bisphenol_A + Polychlorinated_Biphenyls/weight + i.city' on n = 10000 observations and family = 'binomial'.
 #> 
 #> 10000 samples used for simulated LRT distirbution.
 #> 
-#> Log Likelihood: -5584.27 | AIC: 11204.54 | BIC: 11334.33
+#> Log Likelihood: -5981.247 | AIC: 11998.49 | BIC: 12128.28
 #> 
 #> Estimates and Inference for Group Index Effects
 #> 
-#>                    Estimate       LRT P-value    
-#> Mixture Effect 1 -0.7183223 1155.8522  <2e-16 ***
-#> Mixture Effect 2  0.0259615    2.2956  0.4172    
-#> Mixture Effect 3  0.3965223  349.5661  <2e-16 ***
+#>                    Estimate        LRT P-value    
+#> Mixture Effect 1 -0.7118585 1249.38144  <2e-16 ***
+#> Mixture Effect 2 -0.0236949    1.74268  0.5447    
+#> Mixture Effect 3  0.4216609  413.91554  <2e-16 ***
 #> 
 #> Estimates and Inference for Weights
 #> 
-#>    Weight Estimate     LRT P-value    
-#> X1        0.352231 172.232  <2e-16 ***
-#> X2        0.336441 155.602  <2e-16 ***
-#> X3        0.311328 133.957  <2e-16 ***
-#> X4        0.000000   0.000       1    
-#> X5        0.000000   0.000       1    
+#>       Weight Estimate     LRT P-value    
+#> PM2.5        0.354744 187.432  <2e-16 ***
+#> NO2          0.358079 188.728  <2e-16 ***
+#> O3           0.287177 122.582  <2e-16 ***
+#> SO2          0.000000   0.000       1    
+#> CO           0.000000   0.000       1    
 #> -------------------------------------------------
-#>    Weight Estimate     LRT P-value  
-#> X6       0.0817587 0.01341  0.3686  
-#> X7       0.0000000 0.00000  1.0000  
-#> X8       0.0000000 0.00000  1.0000  
-#> X9       0.9182413 1.60019  0.0652 .
+#>         Weight Estimate     LRT P-value
+#> Lead           0.000000 0.00000  1.0000
+#> Mercury        0.700016 0.89830  0.1247
+#> Arsenic        0.299984 0.16411  0.2555
+#> Cadmium        0.000000 0.00000  1.0000
 #> -------------------------------------------------
-#>     Weight Estimate      LRT P-value    
-#> X10       0.3542949 50.28806  <2e-16 ***
-#> X11       0.2789109 31.16497  <2e-16 ***
-#> X12       0.2988009 35.97137  <2e-16 ***
-#> X13       0.0679932  1.88293  0.0739 .  
-#> X14       0.0000000  0.00000  1.0000    
+#>                           Weight Estimate      LRT P-value    
+#> Benzene                          0.319127 49.15113  <2e-16 ***
+#> Toluene                          0.295642 42.30203  <2e-16 ***
+#> Phthalates                       0.260109 33.11722  <2e-16 ***
+#> Bisphenol_A                      0.125123  7.82728  0.0022 ** 
+#> Polychlorinated_Biphenyls        0.000000  0.00000  1.0000    
 #> -------------------------------------------------
 #> 
 #> Estimates and Inference for Intercept and Adjusting Covariates
 #> 
-#>                Estimate      SE         Z P(Z > |z|)    
-#> intercept   -3.42824833 0.63539  -5.39553 6.8321e-08 ***
-#> weight       0.05235603 0.00927   5.64542 1.6478e-08 ***
-#> city_city_2  0.20128467 0.05345   3.76578 0.00016603 ***
-#> city_city_3 -1.03218054 0.05940 -17.37727 < 2.22e-16 ***
+#>                        Estimate      SE         Z P(Z > |z|)    
+#> intercept           -3.48925597 0.60888 -5.730591 1.0008e-08 ***
+#> weight               0.05377299 0.00889  6.048480 1.4622e-09 ***
+#> city_San_Bernardino  0.01105269 0.05374  0.205688    0.83703    
+#> city_Santa_Barbara  -0.01047868 0.05414 -0.193551    0.84653    
 #> 
 #> Significance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' 
 #> 
-#> Total runtime for FGWQSR:  1.77 minutes on 10 cores.
+#> Total runtime for FGWQSR:  1.54 minutes on 10 cores.
 ```
 
 <br>
+
+<br>
+
+Plotting a visual summary of the model output using `plot()` …
+
+``` r
+
+plot(fgwqsr_fit)
+```
+
+<img src="man/figures/README-unnamed-chunk-17-1.png" width="100%" />
 
 Finally, we can compare the true parameter value with our estimates from
 FGWQSR.
@@ -566,8 +626,8 @@ FGWQSR.
 ``` r
 
 group_index_frame = data.frame("True Group Index" = exp(gamma),
-                          "Estimated Group Index" = exp(fgwqsr_fit_adj$inference_frames$group_index_frame$Estimate) %>% round(3),
-                          "Signficiant?" = ifelse(fgwqsr_fit_adj$inference_frames$group_index_frame$`P-value` < .05, "Yes", "No"), check.names = F)
+                               "Estimated Group Index" = exp(fgwqsr_fit_adj$inference_frames$group_index_frame$Estimate) %>% round(3),
+                               "Signficiant?" = ifelse(fgwqsr_fit_adj$inference_frames$group_index_frame$`P-value` < .05, "Yes", "No"), check.names = F)
 
 rownames(group_index_frame) = rownames(fgwqsr_fit_adj$inference_frames$group_index_frame)
 
@@ -588,29 +648,34 @@ rownames(adj_cov_frame) = rownames(fgwqsr_fit_adj$inference_frames$adj_param_fra
 
 group_index_frame; weight_frame; adj_cov_frame
 #>                  True Group Index Estimated Group Index Signficiant?
-#> Mixture Effect 1              0.5                 0.488          Yes
-#> Mixture Effect 2              1.0                 1.026           No
-#> Mixture Effect 3              1.5                 1.487          Yes
+#> Mixture Effect 1              0.5                 0.491          Yes
+#> Mixture Effect 2              1.0                 0.977           No
+#> Mixture Effect 3              1.5                 1.524          Yes
 #>     True Weight Estimated Weight Signficiant?
-#> w11       0.333            0.352          Yes
-#> w12       0.333            0.336          Yes
-#> w13       0.333            0.311          Yes
+#> w11       0.333            0.355          Yes
+#> w12       0.333            0.358          Yes
+#> w13       0.333            0.287          Yes
 #> w14           0            0.000           No
 #> w15           0            0.000           No
-#> w21           -            0.082           No
-#> w22           -            0.000           No
-#> w23           -            0.000           No
-#> w24           -            0.918           No
-#> w31       0.333            0.354          Yes
-#> w32       0.333            0.279          Yes
-#> w33       0.333            0.299          Yes
-#> w34           0            0.068           No
+#> w21           -            0.000           No
+#> w22           -            0.700           No
+#> w23           -            0.300           No
+#> w24           -            0.000           No
+#> w31       0.333            0.319          Yes
+#> w32       0.333            0.296          Yes
+#> w33       0.333            0.260          Yes
+#> w34           0            0.125          Yes
 #> w35           0            0.000           No
-#>             True Covariate Effect Estimated Covariate Effect Significant?
-#> intercept                    -3.3                -3.42824833          Yes
-#> weight                        0.5                 0.05235603          Yes
-#> city_city_2                   0.2                 0.20128467          Yes
-#> city_city_3                  -1.0                -1.03218054          Yes
+#>                     True Covariate Effect Estimated Covariate Effect
+#> intercept                            -3.3                -3.48925597
+#> weight                                0.5                 0.05377299
+#> city_San_Bernardino                   0.2                 0.01105269
+#> city_Santa_Barbara                   -1.0                -0.01047868
+#>                     Significant?
+#> intercept                    Yes
+#> weight                       Yes
+#> city_San_Bernardino           No
+#> city_Santa_Barbara            No
 ```
 
 # Fitting Models with BGWQSR
@@ -651,6 +716,9 @@ independent mcmc chains on multiple cores, speeding up fitting time. The
   function. Can be one of: `rjags`, `simple`, `interruptible`,
   `parallel`, `rjparallel`, `background`, `bgparallel`, or `snow`.
 
+A note of **caution**: JAGS does not allow for variables with spaces in
+their names – please name variables appropriately!
+
 ``` r
 
 bgwqsr_fit = bgwqsr(formula = mod_formula_adj,
@@ -662,15 +730,10 @@ bgwqsr_fit = bgwqsr(formula = mod_formula_adj,
                     n.thin = 1, 
                     n.chains = 3,
                     method = "parallel")
-#> Warning in system(paste0("lipo -archs ", gsub("/bin/jags",
-#> "/libexec/jags-terminal", : running command 'lipo -archs
-#> /usr/local/libexec/jags-terminal' had status 1
-#> Warning in runjags::testjags(silent = T): Reading the binary type of JAGS
-#> failed - do you need to update the Xcode Command Line Tools?
 #> Calling 3 simulations using the parallel method...
 #> Following the progress of chain 1 (the program will wait for all chains
 #> to finish before continuing):
-#> Welcome to JAGS 4.3.2 (official binary) on Wed Apr 23 17:30:28 2025
+#> Welcome to JAGS 4.3.2 (official binary) on Sun Aug 31 12:02:50 2025
 #> JAGS is free software and comes with ABSOLUTELY NO WARRANTY
 #> Loading module: basemod: ok
 #> Loading module: bugs: ok
@@ -697,7 +760,6 @@ bgwqsr_fit = bgwqsr(formula = mod_formula_adj,
 #> ************************************************** 100%
 #> . . . . Updating 0
 #> . Deleting model
-#> . 
 #> All chains have finished
 #> Simulation complete.  Reading coda files...
 #> Coda files loaded successfully
@@ -715,72 +777,72 @@ the summaries object from the bgwqsr model.
 
 ``` r
 bgwqsr_fit$model$summaries
-#>                      Lower95        Median     Upper95          Mean
-#> B0              -4.34782e+00 -3.0878650000 -1.79175000 -3.0847462334
-#> B1              -7.60202e-01 -0.7156250000 -0.67162100 -0.7156927088
-#> B2              -1.95092e-02  0.0161372500  0.05685000  0.0167256253
-#> B3               3.49472e-01  0.3920905000  0.43472400  0.3922761100
-#> phi_weight       2.84115e-02  0.0479448000  0.06594520  0.0479189677
-#> phi_city_city_2  1.30874e-02  0.1619150000  0.27285700  0.1579288804
-#> phi_city_city_3 -1.17209e+00 -1.0464550000 -0.92675000 -1.0466077578
-#> w1[1]            3.04020e-01  0.3514860000  0.40182500  0.3517599415
-#> w1[2]            2.88097e-01  0.3333030000  0.38387100  0.3338621327
-#> w1[3]            2.59910e-01  0.3102180000  0.35836200  0.3096683633
-#> w1[4]            6.16440e-06  0.0005610100  0.02765660  0.0039372013
-#> w1[5]            7.14493e-10  0.0000548948  0.00367727  0.0007723635
-#> w2[1]            5.33781e-11  0.0931336000  0.90453900  0.2391847626
-#> w2[2]            3.01559e-11  0.0641686000  0.90519100  0.2243244062
-#> w2[3]            4.13718e-12  0.0295937000  0.85736100  0.1791966123
-#> w2[4]            1.46942e-15  0.2530120000  0.97442900  0.3572942244
-#> w3[1]            2.66967e-01  0.3630540000  0.45435900  0.3634170657
-#> w3[2]            1.82342e-01  0.2813570000  0.37528500  0.2807463649
-#> w3[3]            2.06964e-01  0.2976065000  0.39850800  0.2988328809
-#> w3[4]            1.64042e-05  0.0396070000  0.13203800  0.0486607099
-#> w3[5]            1.00739e-10  0.0019389200  0.04176720  0.0083429784
-#>                          SD Mode        MCerr MC%ofSD SSeff        AC.10
-#> B0              0.660950751   NA 0.0081843238     1.2  6522 -0.005036043
-#> B1              0.022611448   NA 0.0002668354     1.2  7181  0.005340841
-#> B2              0.019753114   NA 0.0004696327     2.4  1769  0.116928700
-#> B3              0.021771162   NA 0.0002634621     1.2  6829  0.019492507
-#> phi_weight      0.009655255   NA 0.0001196751     1.2  6509 -0.007746521
-#> phi_city_city_2 0.066072957   NA 0.0016066911     2.4  1691  0.143373168
-#> phi_city_city_3 0.062526347   NA 0.0008860734     1.4  4980  0.034062612
-#> w1[1]           0.025269015   NA 0.0006129529     2.4  1700  0.080146087
-#> w1[2]           0.024590205   NA 0.0005995454     2.4  1682  0.131792578
-#> w1[3]           0.025358605   NA 0.0006213296     2.5  1666  0.102504953
-#> w1[4]           0.009197432   NA 0.0014137568    15.4    42  0.918815445
-#> w1[5]           0.002155731   NA 0.0003151204    14.6    47  0.922797114
-#> w2[1]           0.296331789   NA 0.0149296845     5.0   394  0.512573392
-#> w2[2]           0.296851761   NA 0.0157227851     5.3   356  0.584325126
-#> w2[3]           0.275878758   NA 0.0154643527     5.6   318  0.600834420
-#> w2[4]           0.353545039   NA 0.0213802938     6.0   273  0.640013439
-#> w3[1]           0.048455381   NA 0.0012350432     2.5  1539  0.129312309
-#> w3[2]           0.049648639   NA 0.0013841516     2.8  1287  0.204552118
-#> w3[3]           0.048614964   NA 0.0013054725     2.7  1387  0.171244393
-#> w3[4]           0.042137794   NA 0.0033850988     8.0   155  0.771835837
-#> w3[5]           0.014595877   NA 0.0018318112    12.6    63  0.850216402
-#>                     psrf
-#> B0              1.000263
-#> B1              1.000481
-#> B2              1.001490
-#> B3              1.001598
-#> phi_weight      1.000031
-#> phi_city_city_2 1.001370
-#> phi_city_city_3 1.000487
-#> w1[1]           1.001298
-#> w1[2]           1.011604
-#> w1[3]           1.003032
-#> w1[4]           1.235120
-#> w1[5]           1.926119
-#> w2[1]           1.102668
-#> w2[2]           1.011382
-#> w2[3]           1.054547
-#> w2[4]           1.184856
-#> w3[1]           1.003092
-#> w3[2]           1.002040
-#> w3[3]           1.003471
-#> w3[4]           1.163290
-#> w3[5]           1.346692
+#>                              Lower95        Median    Upper95         Mean
+#> B0                      -4.43934e+00 -3.2593150000 -2.0041900 -3.249777458
+#> B1                      -7.56010e-01 -0.7136870000 -0.6705880 -0.713888593
+#> B2                      -4.61841e-02 -0.0051817650  0.0328981 -0.005899786
+#> B3                       3.71707e-01  0.4149585000  0.4568890  0.415020006
+#> phi_weight               3.22949e-02  0.0500865000  0.0677843  0.049990977
+#> phi_city_San_Bernardino -4.19186e-02  0.0024474350  0.0503781  0.003406272
+#> phi_city_Santa_Barbara  -5.00487e-02 -0.0017176400  0.0402956 -0.002656301
+#> w1[1]                    3.01228e-01  0.3502760000  0.3929330  0.349741604
+#> w1[2]                    3.06194e-01  0.3540270000  0.3985910  0.353532380
+#> w1[3]                    2.39543e-01  0.2836020000  0.3320420  0.283558504
+#> w1[4]                    1.23978e-06  0.0074291300  0.0348785  0.010964780
+#> w1[5]                    5.43631e-10  0.0004581505  0.0102544  0.002202719
+#> w2[1]                    3.62446e-13  0.0656404000  0.8990580  0.226507697
+#> w2[2]                    1.74418e-12  0.1260560000  0.9524030  0.288679540
+#> w2[3]                    5.50898e-10  0.1049675000  0.9135490  0.256335102
+#> w2[4]                    7.64668e-12  0.0769490000  0.8976790  0.228477661
+#> w3[1]                    2.31447e-01  0.3223415000  0.4068100  0.322759097
+#> w3[2]                    2.14002e-01  0.3020400000  0.3887550  0.301980482
+#> w3[3]                    1.74584e-01  0.2615150000  0.3482410  0.261260118
+#> w3[4]                    2.50931e-05  0.1093080000  0.1850880  0.106805503
+#> w3[5]                    4.67179e-11  0.0011895800  0.0364765  0.007194815
+#>                                  SD Mode        MCerr MC%ofSD SSeff
+#> B0                      0.619138986   NA 0.0070012727     1.1  7820
+#> B1                      0.021798528   NA 0.0002541620     1.2  7356
+#> B2                      0.020005948   NA 0.0006164046     3.1  1053
+#> B3                      0.021699834   NA 0.0003259813     1.5  4431
+#> phi_weight              0.009060308   NA 0.0001026140     1.1  7796
+#> phi_city_San_Bernardino 0.022138959   NA 0.0002092328     0.9 11196
+#> phi_city_Santa_Barbara  0.021654265   NA 0.0002000105     0.9 11721
+#> w1[1]                   0.023326452   NA 0.0005518004     2.4  1787
+#> w1[2]                   0.023535439   NA 0.0005475673     2.3  1847
+#> w1[3]                   0.023885423   NA 0.0006003005     2.5  1583
+#> w1[4]                   0.012052238   NA 0.0015364066    12.7    62
+#> w1[5]                   0.003975055   NA 0.0005005962    12.6    63
+#> w2[1]                   0.299696829   NA 0.0167501801     5.6   320
+#> w2[2]                   0.330415789   NA 0.0192045724     5.8   296
+#> w2[3]                   0.306218828   NA 0.0152229069     5.0   405
+#> w2[4]                   0.293816447   NA 0.0165985827     5.6   313
+#> w3[1]                   0.045024613   NA 0.0011518839     2.6  1528
+#> w3[2]                   0.045028418   NA 0.0012013815     2.7  1405
+#> w3[3]                   0.045593603   NA 0.0012800529     2.8  1269
+#> w3[4]                   0.048495136   NA 0.0023947361     4.9   410
+#> w3[5]                   0.012696709   NA 0.0012073123     9.5   111
+#>                                AC.10      psrf
+#> B0                       0.009456738 1.0001015
+#> B1                       0.024873619 1.0043675
+#> B2                       0.192501300 1.0033203
+#> B3                       0.049896456 1.0029526
+#> phi_weight               0.009362598 0.9999636
+#> phi_city_San_Bernardino -0.009769222 1.0001111
+#> phi_city_Santa_Barbara  -0.005254866 1.0002181
+#> w1[1]                    0.095844463 1.0158148
+#> w1[2]                    0.092911928 1.0108755
+#> w1[3]                    0.123937097 1.0090403
+#> w1[4]                    0.906682497 1.5615411
+#> w1[5]                    0.897124928 4.2487493
+#> w2[1]                    0.562383546 1.0298180
+#> w2[2]                    0.600222190 1.0749073
+#> w2[3]                    0.542187180 1.0117805
+#> w2[4]                    0.555995299 1.0233872
+#> w3[1]                    0.170776309 1.0088396
+#> w3[2]                    0.166089800 1.0072381
+#> w3[3]                    0.192731196 1.0144361
+#> w3[4]                    0.593465888 1.0354140
+#> w3[5]                    0.817200035 2.4872803
 ```
 
 We can analyze the mixing of the markov chains and corresponding
@@ -792,26 +854,26 @@ par(mfrow = c(3,3))
 coda::traceplot(bgwqsr_fit$model$mcmc) # traceplot
 ```
 
-<img src="man/figures/README-unnamed-chunk-19-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-19-3.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-21-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-3.png" width="100%" />
 
 ``` r
 coda::autocorr.plot(bgwqsr_fit$model$mcmc, ask = F) # autocorrelation plot
 ```
 
-<img src="man/figures/README-unnamed-chunk-20-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-3.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-4.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-5.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-6.png" width="100%" /><img src="man/figures/README-unnamed-chunk-20-7.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-22-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-22-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-22-3.png" width="100%" /><img src="man/figures/README-unnamed-chunk-22-4.png" width="100%" /><img src="man/figures/README-unnamed-chunk-22-5.png" width="100%" /><img src="man/figures/README-unnamed-chunk-22-6.png" width="100%" /><img src="man/figures/README-unnamed-chunk-22-7.png" width="100%" />
 
 ``` r
 par(mfrow = c(3,3))
 coda::densplot(bgwqsr_fit$model$mcmc) # posterior density plots
 ```
 
-<img src="man/figures/README-unnamed-chunk-21-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-21-3.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-23-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-23-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-23-3.png" width="100%" />
 
 ``` r
 plot(bgwqsr_fit$model$mcmc) # combines traceplot() and densplot()
 ```
 
-<img src="man/figures/README-unnamed-chunk-22-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-22-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-22-3.png" width="100%" /><img src="man/figures/README-unnamed-chunk-22-4.png" width="100%" /><img src="man/figures/README-unnamed-chunk-22-5.png" width="100%" /><img src="man/figures/README-unnamed-chunk-22-6.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-24-1.png" width="100%" /><img src="man/figures/README-unnamed-chunk-24-2.png" width="100%" /><img src="man/figures/README-unnamed-chunk-24-3.png" width="100%" /><img src="man/figures/README-unnamed-chunk-24-4.png" width="100%" /><img src="man/figures/README-unnamed-chunk-24-5.png" width="100%" /><img src="man/figures/README-unnamed-chunk-24-6.png" width="100%" />
 
 Finally, we can look at plots for the posterior credible intervals for
 group indices, single chemical weights, and corresponding posterior
@@ -824,16 +886,49 @@ figure. Below are code examples for each of the three function calls.
 plot_betas(bgwqsr_fit)
 ```
 
-<img src="man/figures/README-unnamed-chunk-23-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-25-1.png" width="100%" />
 
 ``` r
 plot_weights(bgwqsr_fit)
 ```
 
-<img src="man/figures/README-unnamed-chunk-24-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-26-1.png" width="100%" />
 
 ``` r
 plot_results(bgwqsr_fit)
 ```
 
-<img src="man/figures/README-unnamed-chunk-25-1.png" width="100%" />
+<img src="man/figures/README-unnamed-chunk-27-1.png" width="100%" />
+
+# Community Guidelines
+
+We welcome contributions and engagement from the community to help
+improve and extend the functionality of `fgwqsr`. To maintain a
+collaborative and supportive environment, please follow these
+guidelines:
+
+## Contributing
+
+- Contributions of all kinds are welcome, including code improvements,
+  documentation updates, bug fixes, and new feature proposals.  
+- Before submitting a pull request, please open an issue to discuss your
+  idea or bug report.  
+- Ensure that code contributions include appropriate documentation and
+  tests where applicable.  
+- Follow the existing code style and structure to maintain consistency.
+
+## Reporting Issues
+
+- If you encounter a problem, please [open an
+  issue](https://github.com/Daniel-Rud/fgwqsr/issues) with a clear
+  description of the bug or unexpected behavior.  
+- Include reproducible examples (minimal code and sample data) whenever
+  possible.  
+- Clearly state your R version, operating system, and any other relevant
+  session information (`sessionInfo()`).
+
+### Seeking Support
+
+- For usage questions or clarification about methods, please first
+  consult the package vignettes and documentation.  
+- If further support is needed, feel free to open a discussion or issue.

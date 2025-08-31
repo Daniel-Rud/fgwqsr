@@ -272,7 +272,7 @@ fgwqsr_fit = fgwqsr(formula = mod_formula,
                     data = data,
                     quantiles = 5,
                     family = 'binomial',
-                    n_mvn_sims = 10,
+                    n_mvn_sims = 10000,
                     verbose = T)
 
 ```
@@ -290,7 +290,7 @@ summary(fgwqsr_fit)
 
 We can plot a visual summary of the model output using `plot()`
 
-```{r}
+```{r, fig.height = 6, fig.width = 14}
 
 plot(fgwqsr_fit)
 
@@ -330,7 +330,7 @@ As mentioned earlier, the `/` character in the model formula sent to `fgwqsr()` 
 set.seed(11)
 # create adjusting covariates
 weight = rnorm(n = n, mean = 68, sd = 2.5)
-city = sample(c("Los Angeles", "San Bernardino", "Santa Barbara"), size = n, replace = T)
+city = sample(c("Los_Angeles", "San_Bernardino", "Santa_Barbara"), size = n, replace = T)
 
 # need to adjust intercept for case control ratio
 intercept = -3.3
@@ -367,7 +367,7 @@ fgwqsr_fit_adj = fgwqsr(formula = mod_formula_adj,
                         data = data,
                         quantiles = 5,
                         family = 'binomial',
-                        n_mvn_sims = 10,
+                        n_mvn_sims = 10000,
                         verbose = T)
 
 ```
@@ -385,7 +385,7 @@ summary(fgwqsr_fit_adj)
 
 Plotting a visual summary of the model output using `plot()` ...
 
-```{r}
+```{r, fig.height = 6, fig.width = 14}
 
 plot(fgwqsr_fit)
 
@@ -445,6 +445,7 @@ We also provide in this package functions to run BGWQSR models using the runjags
 
 * `method` method for mcmc fitting, a passed argument to run.jags function.  Can be one of: `rjags`, `simple`, `interruptible`, `parallel`, `rjparallel`, `background`, `bgparallel`, or `snow`.
 
+A note of **caution**: JAGS does not allow for variables with spaces in their names -- please name variables appropriately!
 
 ```{r}
 
