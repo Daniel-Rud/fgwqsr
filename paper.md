@@ -77,7 +77,7 @@ fgwqsr_model = fgwqsr(formula = model_formula,
                       verbose = T, 
                       cores = cores)
 ```
-Results can be examined using `summary(fgwqsr_model)`, which provides parameter estimates for group effects, group weights, and statistical tests for both group and single-constituent effects.
+Results can be examined using `summary(fgwqsr_model)`, which provides parameter estimates for group effects, group weights, and statistical tests for both group and single-constituent effects.  Forest plots for both group effects and single constituent effects can be plotted using `plot(fgwqsr_model)`.
 
 An optional tuning parameter, `zero_threshold_cutoff`, is used in the non-regular statistical testing procedure. This parameter determines how often near-boundary estimates are assigned a boundary cone in the constrained multivariate normal Monte Carlo inference procedure. A default value of 0.5 has been shown to perform well across various scenarios, though reasonable values range from [0.05, 0.5]. More details are provided in @fgwqsr.
 
