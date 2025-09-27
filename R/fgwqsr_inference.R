@@ -851,7 +851,7 @@ generate_optim_limits = function(effects, cov_mat)
   {
     # create permutations of sign constrained regions for groups with sign constrainted approx cone
     permutations_regions = gtools::permutations(n = 2, r = groups_on_boundary %>% length,
-                                        v = c(-1,1), repeats.allowed = T)
+                                        v = c(-1,1), repeats.allowed = TRUE)
 
     # add sign constrained cones to limits of optimization
     for(i in 1:nrow(permutations_regions)) # iterate over permutation region optimization number
@@ -1210,7 +1210,7 @@ format_scientific = function(pvalues, cutoff = 1E-4)
   {
     if((pvalues[i] <= cutoff) && (pvalues[i] !=0))
     {
-      new_pvalues[i] = format(pvalues[i],digits =digits, scientific = T)
+      new_pvalues[i] = format(pvalues[i],digits =digits, scientific = TRUE)
     }else if(pvalues[i] == 0)
     {
       new_pvalues[i] = paste("<", cutoff, sep = "")

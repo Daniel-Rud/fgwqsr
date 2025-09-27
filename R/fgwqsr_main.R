@@ -127,7 +127,7 @@ get_formulas= function(vars,formula)
   if(num_groups > 1) # if more than one group, perform the excluded group fg runs
   {
 
-    bar_locs = gregexpr("|", RHS, fixed = T)[[1]] %>% as.numeric # where bars are between groups
+    bar_locs = gregexpr("|", RHS, fixed = TRUE)[[1]] %>% as.numeric # where bars are between groups
 
     if(backslash_loc != -1)
     {
@@ -858,11 +858,11 @@ fit_fgwqsr_hybrid = function(formula, data, quantiles, family, offset, output_he
 
   # return y and new data only for fist FG formula.
 
-  if(return_y == T)
+  if(return_y == TRUE)
   {
     return_list[["y"]] = y_vec
   }
-  if(return_data == T)
+  if(return_data == TRUE)
   {
     return_list[["new_data"]] = data
   }
@@ -1009,11 +1009,11 @@ fit_fgwqsr_MO = function(formula, data, quantiles,
 
   # return y and new data only for fist FG formula.
 
-  if(return_y == T)
+  if(return_y == TRUE)
   {
     return_list[["y"]] = y_vec
   }
-  if(return_data == T)
+  if(return_data == TRUE)
   {
     return_list[["new_data"]] = data
   }
@@ -1023,7 +1023,7 @@ fit_fgwqsr_MO = function(formula, data, quantiles,
 generate_optimization_regions = function(vars, num_confounders)
 {
   perms = gtools::permutations(2, r = length(vars$mixture), v = c(-1,1),
-                       repeats.allowed = T)
+                       repeats.allowed = TRUE)
   num_mixes = length(vars$mixture)
 
   num_in_each_group = sapply(vars$mixture, length)
@@ -1137,12 +1137,12 @@ fgwqsr_caller = function(formulas, data, quantiles, family, vars, verbose, cores
                             quantiles = quantiles,
                             family = family,
                             offset = offset,
-                            return_y = T,
-                            return_data = T, initial_cov_vals = initial_cov_vals,
+                            return_y = TRUE,
+                            return_data = TRUE, initial_cov_vals = initial_cov_vals,
                             optim_control_list = optim_control_list,
                             cores = cores)
 
-  if(verbose == T)
+  if(verbose == TRUE)
   {
     p()
   }
@@ -1277,7 +1277,7 @@ fgwqsr = function(formula, data, quantiles = 5,
                   n_mvn_sims = 10000,
                   zero_threshold_cutoff = .5,
                   offset = NULL,
-                  verbose = T,
+                  verbose = TRUE,
                   cores = future::availableCores(),
                   optim_control_list = list(maxit = 1000, factr = 1E-12, fnscale = 1))
 {
@@ -1439,7 +1439,7 @@ fgwqsr = function(formula, data, quantiles = 5,
   if(!is.logical(verbose))
   {
     message("The verbose argument must be of type logical (either T or F).  Resetting to the default value of T.")
-    verbose = T
+    verbose = TRUE
   }
 
   # check that cores > 0, if cores > available cores,
@@ -1548,7 +1548,7 @@ fgwqsr = function(formula, data, quantiles = 5,
 
   inference_frames = NULL # initialize
 
-  if(verbose == T)
+  if(verbose == TRUE)
   {
     progressr::with_progress(inference_frames <- perform_inference(ll_models = ll_models,
                                                         params_logistic_form = params_logistic_form,
@@ -1672,11 +1672,11 @@ print.fgwqsr = function(object,...)
   cat("\n\nLog Likelihood:", object$ll, "| AIC:",object$aic, "| BIC:", object$bic)
   cat("\n\nEstimates and Inference for Group Index Effects\n\n", sep = "")
   stats::printCoefmat(object$inference_frames$group_index_frame[,-4], digits = digits,
-                      signif.stars = T, signif.legend = F,
+                      signif.stars = TRUE, signif.legend = F,
                       cs.ind = 1,
                       tst.ind = 2,
-                      P.values = T,
-                      has.Pvalue = T)
+                      P.values = TRUE,
+                      has.Pvalue = TRUE)
   cat("\nEstimates and Inference for Weights\n\n")
 
   current_index = 1
@@ -1685,21 +1685,21 @@ print.fgwqsr = function(object,...)
     group_size = object$vars$mixture[[i]] %>% length
     output = object$inference_frames$weight_frame[current_index: (current_index + group_size - 1), ]
     stats::printCoefmat(output[,-4], digits = digits,
-                        signif.stars = T, signif.legend = F,
+                        signif.stars = TRUE, signif.legend = F,
                         cs.ind = 1,
                         tst.ind = 2,
-                        P.values = T,
-                        has.Pvalue = T)
+                        P.values = TRUE,
+                        has.Pvalue = TRUE)
     current_index = current_index + group_size
     cat("-------------------------------------------------\n")
   }
   cat("\nEstimates and Inference for Intercept and Adjusting Covariates\n\n")
   stats::printCoefmat(object$inference_frames$adj_param_frame[,1:4], digits = digits,
-                      signif.stars = T, signif.legend = F,
+                      signif.stars = TRUE, signif.legend = F,
                       cs.ind = 1:2,
                       tst.ind = 2,
-                      P.values = T,
-                      has.Pvalue = T)
+                      P.values = TRUE,
+                      has.Pvalue = TRUE)
   cat("\nSignificance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' \n")
 
   if(object$family == "gaussian")
@@ -1731,7 +1731,7 @@ plot.fgwqsr = function(object, ...)
   # Weight Forest Plot
   chem_names = rownames(object$inference_frames$weight_frame)
   plot_weight_data = data.frame(chem_names = factor(chem_names, levels = rev(chem_names),
-                                                    ordered = T),
+                                                    ordered = TRUE),
                                 weight_estimate = object$inference_frames$weight_frame[,1],
                                 significant =
                                   factor(ifelse(object$inference_frames$weight_frame[,3] <
@@ -1758,7 +1758,7 @@ plot.fgwqsr = function(object, ...)
   # Group Index Plot
   plot_group_data = data.frame(group_names = factor(rownames(object$inference_frames$group_index_frame),
                                                     levels = rev(rownames(object$inference_frames$group_index_frame)),
-                                                    ordered = T),
+                                                    ordered = TRUE),
                                group_index_estimate = object$inference_frames$group_index_frame[,1],
                                significant =
                                  factor(ifelse(object$inference_frames$group_index_frame[,3] <

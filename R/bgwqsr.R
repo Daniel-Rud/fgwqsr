@@ -251,7 +251,7 @@ bgwqsr= function(formula, data, quantiles = 5,  n.iter = 10000 / n.chains, n.bur
 {
 
   # check to make sure user has JAGS installed
-  jags_found <-runjags::testjags(silent = T)
+  jags_found <-runjags::testjags(silent = TRUE)
   # if not both jags available and jags found
   if(!(jags_found$JAGS.available && jags_found$JAGS.found))
   {
