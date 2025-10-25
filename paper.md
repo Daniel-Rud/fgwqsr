@@ -74,7 +74,7 @@ fgwqsr_model = fgwqsr(formula = model_formula,
                       quantiles = q, 
                       family = family, 
                       n_mvn_sims = n_mvn_rep, 
-                      verbose = T, 
+                      verbose = TRUE, 
                       cores = cores)
 ```
 Results can be examined using `summary(fgwqsr_model)`, which provides parameter estimates for group effects, group weights, and statistical tests for both group and single-constituent effects.  Forest plots for both group effects and single constituent effects can be plotted using `plot(fgwqsr_model)`.
