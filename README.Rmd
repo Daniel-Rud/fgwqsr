@@ -273,7 +273,7 @@ fgwqsr_fit = fgwqsr(formula = mod_formula,
                     quantiles = 5,
                     family = 'binomial',
                     n_mvn_sims = 10000,
-                    verbose = T)
+                    verbose = TRUE)
 
 ```
 <br>
@@ -330,7 +330,7 @@ As mentioned earlier, the `/` character in the model formula sent to `fgwqsr()` 
 set.seed(11)
 # create adjusting covariates
 weight = rnorm(n = n, mean = 68, sd = 2.5)
-city = sample(c("Los_Angeles", "San_Bernardino", "Santa_Barbara"), size = n, replace = T)
+city = sample(c("Los_Angeles", "San_Bernardino", "Santa_Barbara"), size = n, replace = TRUE)
 
 # need to adjust intercept for case control ratio
 intercept = -3.3
@@ -368,7 +368,7 @@ fgwqsr_fit_adj = fgwqsr(formula = mod_formula_adj,
                         quantiles = 5,
                         family = 'binomial',
                         n_mvn_sims = 10000,
-                        verbose = T)
+                        verbose = TRUE)
 
 ```
 <br>

@@ -65,9 +65,20 @@ You can install the development version of fgwqsr from
 remotes::install_github("Daniel-Rud/fgwqsr")
 #> Using github PAT from envvar GITHUB_PAT. Use `gitcreds::gitcreds_set()` and unset GITHUB_PAT in .Renviron (or elsewhere) if you want to use the more secure git credential store instead.
 #> Downloading GitHub repo Daniel-Rud/fgwqsr@HEAD
+#> magrittr  (2.0.3  -> 2.0.4 ) [CRAN]
+#> S7        (NA     -> 0.2.0 ) [CRAN]
+#> pillar    (1.11.0 -> 1.11.1) [CRAN]
+#> hms       (1.1.3  -> 1.1.4 ) [CRAN]
+#> stringr   (1.5.1  -> 1.5.2 ) [CRAN]
+#> ggplot2   (3.5.2  -> 4.0.0 ) [CRAN]
+#> progressr (0.15.1 -> 0.17.0) [CRAN]
+#> pracma    (2.4.4  -> 2.4.6 ) [CRAN]
+#> Installing 8 packages: magrittr, S7, pillar, hms, stringr, ggplot2, progressr, pracma
 #> 
+#> The downloaded binary packages are in
+#>  /var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T//Rtmp7Cycnr/downloaded_packages
 #> ── R CMD build ─────────────────────────────────────────────────────────────────
-#>      checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpelvZTp/remotes121c86043a123/Daniel-Rud-fgwqsr-8814766/DESCRIPTION’ ...  ✔  checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/RtmpelvZTp/remotes121c86043a123/Daniel-Rud-fgwqsr-8814766/DESCRIPTION’
+#>      checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/Rtmp7Cycnr/remotes14bb165c2bf09/Daniel-Rud-fgwqsr-3f4d122/DESCRIPTION’ ...  ✔  checking for file ‘/private/var/folders/b4/9kg7p6cj729_pzc5dggk_9jm0000gn/T/Rtmp7Cycnr/remotes14bb165c2bf09/Daniel-Rud-fgwqsr-3f4d122/DESCRIPTION’
 #>   ─  preparing ‘fgwqsr’:
 #>      checking DESCRIPTION meta-information ...  ✔  checking DESCRIPTION meta-information
 #>   ─  checking for LF line-endings in source and make files and shell scripts
@@ -367,7 +378,7 @@ fgwqsr_fit = fgwqsr(formula = mod_formula,
                     quantiles = 5,
                     family = 'binomial',
                     n_mvn_sims = 10000,
-                    verbose = T)
+                    verbose = TRUE)
 #> Fitting full and nested FGWQSR models...
 #> 
 #> Performing Likelihood Ratio Test Inference...
@@ -425,7 +436,7 @@ summary(fgwqsr_fit)
 #> 
 #> Significance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' 
 #> 
-#> Total runtime for FGWQSR:  1.42 minutes on 10 cores.
+#> Total runtime for FGWQSR:  1.54 minutes on 10 cores.
 ```
 
 <br>
@@ -501,7 +512,7 @@ the comparison between Santa Barbara and Los Angeles.
 set.seed(11)
 # create adjusting covariates
 weight = rnorm(n = n, mean = 68, sd = 2.5)
-city = sample(c("Los_Angeles", "San_Bernardino", "Santa_Barbara"), size = n, replace = T)
+city = sample(c("Los_Angeles", "San_Bernardino", "Santa_Barbara"), size = n, replace = TRUE)
 
 # need to adjust intercept for case control ratio
 intercept = -3.3
@@ -554,7 +565,7 @@ fgwqsr_fit_adj = fgwqsr(formula = mod_formula_adj,
                         quantiles = 5,
                         family = 'binomial',
                         n_mvn_sims = 10000,
-                        verbose = T)
+                        verbose = TRUE)
 #> Fitting full and nested FGWQSR models...
 #> 
 #> Performing Likelihood Ratio Test Inference...
@@ -614,7 +625,7 @@ summary(fgwqsr_fit_adj)
 #> 
 #> Significance Codes: <0.001 '***' <0.01 '**' <0.05 '*' <0.10 '.' 
 #> 
-#> Total runtime for FGWQSR:  1.57 minutes on 10 cores.
+#> Total runtime for FGWQSR:  1.72 minutes on 10 cores.
 ```
 
 <br>
@@ -743,7 +754,7 @@ bgwqsr_fit = bgwqsr(formula = mod_formula_adj,
 #> Calling 3 simulations using the parallel method...
 #> Following the progress of chain 1 (the program will wait for all chains
 #> to finish before continuing):
-#> Welcome to JAGS 4.3.2 (official binary) on Sun Aug 31 12:13:59 2025
+#> Welcome to JAGS 4.3.2 (official binary) on Sat Oct 25 14:39:10 2025
 #> JAGS is free software and comes with ABSOLUTELY NO WARRANTY
 #> Loading module: basemod: ok
 #> Loading module: bugs: ok
@@ -787,72 +798,72 @@ the summaries object from the bgwqsr model.
 
 ``` r
 bgwqsr_fit$model$summaries
-#>                              Lower95       Median    Upper95         Mean
-#> B0                      -4.51673e+00 -3.234565000 -2.0556200 -3.240077827
-#> B1                      -7.55912e-01 -0.712505500 -0.6699580 -0.712707515
-#> B2                      -4.60343e-02 -0.006361070  0.0308357 -0.006839838
-#> B3                       3.71839e-01  0.414750500  0.4566030  0.414595520
-#> phi_weight               3.18810e-02  0.049787700  0.0679265  0.049852758
-#> phi_city_San_Bernardino -4.42564e-02  0.001908540  0.0482238  0.002743681
-#> phi_city_Santa_Barbara  -4.99132e-02 -0.002199065  0.0414722 -0.003038943
-#> w1[1]                    3.04301e-01  0.353853000  0.3984010  0.353346952
-#> w1[2]                    3.07197e-01  0.353501000  0.4004670  0.353768675
-#> w1[3]                    2.38390e-01  0.284111000  0.3318060  0.284609213
-#> w1[4]                    8.79485e-07  0.002227950  0.0242490  0.005940134
-#> w1[5]                    3.09730e-08  0.000229071  0.0115766  0.002335033
-#> w2[1]                    1.80818e-09  0.073018950  0.8729500  0.219533553
-#> w2[2]                    2.53242e-10  0.124019000  0.9152900  0.283659605
-#> w2[3]                    8.74800e-12  0.142057000  0.9123200  0.276559296
-#> w2[4]                    2.88558e-08  0.079288600  0.8521550  0.220247550
-#> w3[1]                    2.33887e-01  0.325652000  0.4128360  0.325486426
-#> w3[2]                    2.16828e-01  0.300339000  0.3932940  0.301239531
-#> w3[3]                    1.74056e-01  0.260643000  0.3567910  0.261618549
-#> w3[4]                    9.07646e-04  0.109226500  0.1878680  0.106964416
-#> w3[5]                    5.19473e-09  0.000166607  0.0245559  0.004691055
+#>                              Lower95        Median    Upper95         Mean
+#> B0                      -4.45852e+00 -3.2218800000 -1.9566000 -3.220008171
+#> B1                      -7.55386e-01 -0.7126970000 -0.6690760 -0.712651971
+#> B2                      -4.56030e-02 -0.0066013550  0.0323340 -0.007453550
+#> B3                       3.73388e-01  0.4147615000  0.4574000  0.414953516
+#> phi_weight               3.15085e-02  0.0495703500  0.0679909  0.049568254
+#> phi_city_San_Bernardino -4.15243e-02  0.0019847750  0.0495524  0.002931836
+#> phi_city_Santa_Barbara  -5.02289e-02 -0.0020139250  0.0422460 -0.002741181
+#> w1[1]                    3.05462e-01  0.3528590000  0.3993990  0.353272510
+#> w1[2]                    3.07862e-01  0.3539475000  0.4034710  0.354524577
+#> w1[3]                    2.36951e-01  0.2854215000  0.3308530  0.284657063
+#> w1[4]                    1.91152e-07  0.0000752684  0.0287554  0.005122999
+#> w1[5]                    1.65515e-09  0.0002460360  0.0137456  0.002422861
+#> w2[1]                    8.63935e-11  0.0715910000  0.9315710  0.235939267
+#> w2[2]                    3.00424e-08  0.1670450000  0.9366850  0.310730063
+#> w2[3]                    1.63923e-16  0.1139280000  0.9169520  0.266887223
+#> w2[4]                    2.62231e-13  0.0390171000  0.8500010  0.186443428
+#> w3[1]                    2.33765e-01  0.3262500000  0.4119420  0.324989171
+#> w3[2]                    2.17994e-01  0.3004945000  0.3957450  0.300366085
+#> w3[3]                    1.68924e-01  0.2613465000  0.3508750  0.261361233
+#> w3[4]                    2.52655e-04  0.1062490000  0.1886920  0.103109906
+#> w3[5]                    1.12018e-07  0.0035332500  0.0486380  0.010173614
 #>                                  SD Mode        MCerr MC%ofSD SSeff
-#> B0                      0.626959500   NA 0.0071901968     1.1  7603
-#> B1                      0.021856942   NA 0.0002490331     1.1  7703
-#> B2                      0.019647701   NA 0.0005323049     2.7  1362
-#> B3                      0.021767741   NA 0.0003117522     1.4  4875
-#> phi_weight              0.009157264   NA 0.0001067935     1.2  7353
-#> phi_city_San_Bernardino 0.022078554   NA 0.0002027716     0.9 11856
-#> phi_city_Santa_Barbara  0.022033935   NA 0.0001996468     0.9 12180
-#> w1[1]                   0.023802653   NA 0.0005695187     2.4  1747
-#> w1[2]                   0.023936764   NA 0.0005643569     2.4  1799
-#> w1[3]                   0.024260656   NA 0.0005943187     2.4  1666
-#> w1[4]                   0.008534823   NA 0.0012082987    14.2    50
-#> w1[5]                   0.004925966   NA 0.0004853203     9.9   103
-#> w2[1]                   0.283558992   NA 0.0130010415     4.6   476
-#> w2[2]                   0.319709746   NA 0.0153566404     4.8   433
-#> w2[3]                   0.307104507   NA 0.0144209047     4.7   454
-#> w2[4]                   0.280572692   NA 0.0124012762     4.4   512
-#> w3[1]                   0.046271693   NA 0.0012691338     2.7  1329
-#> w3[2]                   0.045269872   NA 0.0012065383     2.7  1408
-#> w3[3]                   0.046845087   NA 0.0013317882     2.8  1237
-#> w3[4]                   0.050891020   NA 0.0028554960     5.6   318
-#> w3[5]                   0.012826129   NA 0.0016683974    13.0    59
-#>                                AC.10     psrf
-#> B0                      -0.019209941 1.000450
-#> B1                       0.011448491 1.005023
-#> B2                       0.156969017 1.001026
-#> B3                       0.032430960 1.003198
-#> phi_weight              -0.019678517 1.000449
-#> phi_city_San_Bernardino -0.007921566 1.000239
-#> phi_city_Santa_Barbara  -0.019274547 1.000421
-#> w1[1]                    0.106027568 1.010543
-#> w1[2]                    0.083389597 1.005137
-#> w1[3]                    0.117619789 1.006981
-#> w1[4]                    0.911847123 1.492687
-#> w1[5]                    0.927279147 3.717224
-#> w2[1]                    0.515293919 1.031223
-#> w2[2]                    0.557117046 1.063476
-#> w2[3]                    0.522599017 1.060445
-#> w2[4]                    0.499738604 1.009667
-#> w3[1]                    0.199308931 1.004396
-#> w3[2]                    0.195566134 1.004504
-#> w3[3]                    0.250774293 1.004680
-#> w3[4]                    0.639730871 1.032039
-#> w3[5]                    0.853183850 1.234071
+#> B0                      0.638125152   NA 0.0076749129     1.2  6913
+#> B1                      0.021873419   NA 0.0002570711     1.2  7240
+#> B2                      0.019787934   NA 0.0005203689     2.6  1446
+#> B3                      0.021506128   NA 0.0003268946     1.5  4328
+#> phi_weight              0.009324155   NA 0.0001120658     1.2  6923
+#> phi_city_San_Bernardino 0.021957654   NA 0.0001962161     0.9 12523
+#> phi_city_Santa_Barbara  0.022348267   NA 0.0002214499     1.0 10184
+#> w1[1]                   0.024187609   NA 0.0005775212     2.4  1754
+#> w1[2]                   0.024122338   NA 0.0005716504     2.4  1781
+#> w1[3]                   0.024251888   NA 0.0006167417     2.5  1546
+#> w1[4]                   0.010114080   NA 0.0013034687    12.9    60
+#> w1[5]                   0.005097320   NA 0.0006652544    13.1    59
+#> w2[1]                   0.307785713   NA 0.0172248353     5.6   319
+#> w2[2]                   0.329363935   NA 0.0149165239     4.5   488
+#> w2[3]                   0.310152349   NA 0.0154043022     5.0   405
+#> w2[4]                   0.271386358   NA 0.0132778777     4.9   418
+#> w3[1]                   0.045192531   NA 0.0011873192     2.6  1449
+#> w3[2]                   0.044736089   NA 0.0011772977     2.6  1444
+#> w3[3]                   0.046451120   NA 0.0013023744     2.8  1272
+#> w3[4]                   0.053024238   NA 0.0027694028     5.2   367
+#> w3[5]                   0.016183531   NA 0.0016752066    10.4    93
+#>                                AC.10      psrf
+#> B0                       0.019800722 1.0003642
+#> B1                       0.014590917 1.0035383
+#> B2                       0.164873398 1.0008977
+#> B3                       0.050010493 1.0064716
+#> phi_weight               0.017570256 1.0004898
+#> phi_city_San_Bernardino  0.001801816 1.0002862
+#> phi_city_Santa_Barbara  -0.002013494 0.9999767
+#> w1[1]                    0.112261802 1.0046711
+#> w1[2]                    0.115405128 1.0094205
+#> w1[3]                    0.130214852 1.0134289
+#> w1[4]                    0.929149468 1.7569553
+#> w1[5]                    0.911154726 3.8992113
+#> w2[1]                    0.615018407 1.0282425
+#> w2[2]                    0.545762960 1.0436788
+#> w2[3]                    0.549314890 1.1435264
+#> w2[4]                    0.543643015 1.1069579
+#> w3[1]                    0.158593122 1.0102579
+#> w3[2]                    0.166598993 1.0125401
+#> w3[3]                    0.207842658 1.0245583
+#> w3[4]                    0.624509835 1.1117720
+#> w3[5]                    0.830375085 1.1733494
 ```
 
 We can analyze the mixing of the markov chains and corresponding
