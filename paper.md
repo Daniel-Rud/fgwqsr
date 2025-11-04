@@ -99,7 +99,7 @@ Thus, FGWQSR represents a significant advancement in WQSR methodology, providing
 
 # Installation 
 
-The most current version of `fgwqsr` package can be downloaded from github using the following instructions: 
+The most current version of `fgwqsr` package can be downloaded from Github using the following instructions: 
 ```r
 install.packages("remotes")
 remotes::install_github("Daniel-Rud/fgwqsr")
